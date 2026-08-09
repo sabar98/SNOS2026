@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\LetterOfAcceptance;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
+
+class LoaPdfGenerator
+{
+    public function generate(LetterOfAcceptance $loa): string
+    {
+        $loa->loadMissing('article.eventRegistration.user', 'article.journal');
+
+        $article = $loa->article;
+
+        $pdf = Pdf::loadView('loa.pdf', [
+            'loa' => $loa,
+            'article' => $article,
+            'seminarName' => config('seminar.name'),
+            'seminarDateRange' => config('seminar.date_range'),
+            'seminarLocation' => config('seminar.location'),
+            'participantName' => $article->eventRegistration->user->name,
+            'journalName' => $article->journal?->name,
+            'signerName' => config('seminar.certificate_signer.name'),
+            'signerTitle' => config('seminar.certificate_signer.title'),
+        ])->setPaper('a4', 'portrait');
+
+        $path = "loa/{$loa->loa_number}.pdf";
+
+        Storage::disk('public')->put($path, $pdf->output());
+
+        return $path;
+    }
+}

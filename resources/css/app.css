@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body,
+html {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+    :root {
+        --background: 210 50% 98%;
+        --foreground: 222 47% 14%;
+        --card: 0 0% 100%;
+        --card-foreground: 222 47% 14%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 47% 14%;
+        --primary: 201 90% 41%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 204 60% 94%;
+        --secondary-foreground: 201 80% 22%;
+        --muted: 210 40% 95.5%;
+        --muted-foreground: 215 20% 46%;
+        --accent: 199 89% 94%;
+        --accent-foreground: 201 90% 27%;
+        --destructive: 0 72% 55%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 210 32% 90%;
+        --input: 210 28% 88%;
+        --ring: 201 90% 41%;
+        --chart-1: 201 90% 41%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 217 91% 60%;
+        --chart-4: 190 90% 45%;
+        --chart-5: 262 65% 62%;
+        --radius: 0.75rem;
+        --sidebar-background: 213 88% 42%;
+        --sidebar-foreground: 210 100% 97%;
+        --sidebar-primary: 0 0% 100%;
+        --sidebar-primary-foreground: 213 88% 30%;
+        --sidebar-accent: 213 75% 34%;
+        --sidebar-accent-foreground: 0 0% 100%;
+        --sidebar-border: 213 60% 34%;
+        --sidebar-ring: 205 90% 78%;
+    }
+
+    .dark {
+        --background: 222 47% 8%;
+        --foreground: 210 40% 96%;
+        --card: 222 43% 11%;
+        --card-foreground: 210 40% 96%;
+        --popover: 222 43% 11%;
+        --popover-foreground: 210 40% 96%;
+        --primary: 199 89% 58%;
+        --primary-foreground: 222 47% 9%;
+        --secondary: 217 33% 17%;
+        --secondary-foreground: 210 40% 96%;
+        --muted: 217 33% 14%;
+        --muted-foreground: 215 20% 68%;
+        --accent: 217 33% 20%;
+        --accent-foreground: 199 89% 75%;
+        --destructive: 0 70% 52%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 217 33% 18%;
+        --input: 217 33% 20%;
+        --ring: 199 89% 58%;
+        --chart-1: 199 89% 58%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 217 91% 65%;
+        --chart-4: 190 85% 55%;
+        --chart-5: 262 70% 68%;
+        --sidebar-background: 220 60% 13%;
+        --sidebar-foreground: 210 40% 92%;
+        --sidebar-primary: 199 89% 60%;
+        --sidebar-primary-foreground: 222 47% 9%;
+        --sidebar-accent: 217 48% 22%;
+        --sidebar-accent-foreground: 199 89% 82%;
+        --sidebar-border: 217 45% 20%;
+        --sidebar-ring: 199 89% 58%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+@layer components {
+    [data-sidebar='sidebar'] {
+        background-image: linear-gradient(180deg, hsl(213 88% 48%) 0%, hsl(var(--sidebar-background)) 260px);
+    }
+
+    .dark [data-sidebar='sidebar'] {
+        background-image: linear-gradient(180deg, hsl(220 60% 18%) 0%, hsl(var(--sidebar-background)) 260px);
+    }
+
+    [data-sidebar='menu-button'][data-active='true'] {
+        @apply relative font-semibold shadow-sm;
+    }
+
+    [data-sidebar='menu-button'][data-active='true']::before {
+        content: '';
+        @apply absolute inset-y-1 left-0 w-1 rounded-full bg-sidebar-primary;
+    }
+
+    [data-sidebar='header'],
+    [data-sidebar='footer'] {
+        @apply border-sidebar-border/70;
+    }
+
+    .brand-hero-panel {
+        background-color: #0369a1;
+        background-image:
+            radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 55%),
+            linear-gradient(135deg, #0284c7 0%, #0369a1 45%, #1e3a8a 100%);
+    }
+}
