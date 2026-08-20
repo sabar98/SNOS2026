@@ -47,6 +47,21 @@ class ReviewerAssignmentController extends Controller
         return back()->with('status', 'reviewer-assigned');
     }
 
+    public function update(Request $request, ArticleReviewer $reviewerAssignment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reviewer_id' => ['required', 'exists:users,id'],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $reviewerAssignment->update([
+            'reviewer_id' => $validated['reviewer_id'],
+            'due_date' => $validated['due_date'] ?? null,
+        ]);
+
+        return back()->with('status', 'reviewer-assignment-updated');
+    }
+
     public function destroy(ArticleReviewer $reviewerAssignment): RedirectResponse
     {
         $reviewerAssignment->delete();

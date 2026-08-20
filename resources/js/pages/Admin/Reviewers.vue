@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useInitials } from '@/composables/useInitials';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ClipboardList, Pencil, Search, Trash2, UserCheck, UserPlus, Users } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 interface Reviewer {
     id: number;
@@ -16,57 +19,23 @@ interface Reviewer {
     review_assignments_count: number;
 }
 
-defineProps<{
+const props = defineProps<{
     reviewers: Reviewer[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reviewer', href: '/admin/reviewers' }];
 
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
+const { getInitials } = useInitials();
+
+const search = ref('');
+
+const filteredReviewers = computed(() => {
+    const query = search.value.trim().toLowerCase();
+    if (!query) return props.reviewers;
+    return props.reviewers.filter((r) => r.name.toLowerCase().includes(query) || r.email.toLowerCase().includes(query));
 });
 
-function submit() {
-    form.post(route('admin.reviewers.store'), {
-        preserveScroll: true,
-        onSuccess: () => form.reset(),
-    });
-}
-
-const editingId = ref<number | null>(null);
-const editForm = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-});
-
-function startEdit(reviewer: Reviewer) {
-    editingId.value = reviewer.id;
-    editForm.reset();
-    editForm.clearErrors();
-    editForm.name = reviewer.name;
-    editForm.email = reviewer.email;
-}
-
-function cancelEdit() {
-    editingId.value = null;
-    editForm.reset();
-    editForm.clearErrors();
-}
-
-function submitEdit(reviewerId: number) {
-    editForm.put(route('admin.reviewers.update', reviewerId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            editingId.value = null;
-            editForm.reset();
-        },
-    });
-}
+const totalAssignments = computed(() => props.reviewers.reduce((sum, r) => sum + r.review_assignments_count, 0));
 
 function destroy(reviewer: Reviewer) {
     if (!confirm(`Hapus akun reviewer "${reviewer.name}"?`)) {
@@ -80,103 +49,108 @@ function destroy(reviewer: Reviewer) {
     <Head title="Reviewer" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
-            <Card>
-                <CardHeader><CardTitle>Tambah Akun Reviewer</CardTitle></CardHeader>
-                <CardContent>
-                    <form class="grid gap-3" @submit.prevent="submit">
-                        <div class="grid gap-1.5">
-                            <Label for="reviewer_name">Nama</Label>
-                            <Input id="reviewer_name" v-model="form.name" required />
-                            <p v-if="form.errors.name" class="text-sm text-destructive">{{ form.errors.name }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="reviewer_email">Email</Label>
-                            <Input id="reviewer_email" v-model="form.email" type="email" required />
-                            <p v-if="form.errors.email" class="text-sm text-destructive">{{ form.errors.email }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="reviewer_password">Kata Sandi</Label>
-                            <Input id="reviewer_password" v-model="form.password" type="password" required />
-                            <p v-if="form.errors.password" class="text-sm text-destructive">{{ form.errors.password }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="reviewer_password_confirmation">Konfirmasi Kata Sandi</Label>
-                            <Input id="reviewer_password_confirmation" v-model="form.password_confirmation" type="password" required />
-                        </div>
-                        <Button type="submit" :disabled="form.processing">Simpan</Button>
-                    </form>
-                </CardContent>
-            </Card>
+        <div class="flex flex-1 flex-col gap-6 p-4">
+            <PageHeader
+                :icon="UserCheck"
+                icon-class="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                title="Reviewer"
+                description="Kelola akun reviewer yang menilai artikel yang masuk ke SNOS 2026."
+            >
+                <template #actions>
+                    <Link :href="route('admin.reviewers.create')">
+                        <Button class="gap-2"><UserPlus class="size-4" /> Tambah Reviewer</Button>
+                    </Link>
+                </template>
+            </PageHeader>
 
-            <Card>
-                <CardHeader><CardTitle>Daftar Reviewer</CardTitle></CardHeader>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <Card class="border-emerald-100 bg-emerald-50 dark:border-border dark:bg-emerald-950/40">
+                    <CardContent class="flex items-center gap-4 pt-6">
+                        <span
+                            class="flex size-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                        >
+                            <Users class="size-5" />
+                        </span>
+                        <div>
+                            <p class="text-2xl font-bold tracking-tight">{{ reviewers.length }}</p>
+                            <p class="text-sm text-muted-foreground">Akun Reviewer</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card class="border-emerald-100 bg-emerald-50 dark:border-border dark:bg-emerald-950/40">
+                    <CardContent class="flex items-center gap-4 pt-6">
+                        <span
+                            class="flex size-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                        >
+                            <ClipboardList class="size-5" />
+                        </span>
+                        <div>
+                            <p class="text-2xl font-bold tracking-tight">{{ totalAssignments }}</p>
+                            <p class="text-sm text-muted-foreground">Total Tugas Review</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card class="border-emerald-100 bg-emerald-50 dark:border-border dark:bg-emerald-950/40">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                    <CardTitle class="flex items-center gap-2"><Users class="size-4 text-muted-foreground" /> Daftar Reviewer</CardTitle>
+                    <div class="relative w-full max-w-xs">
+                        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input v-model="search" placeholder="Cari nama atau email..." class="pl-9" />
+                    </div>
+                </CardHeader>
                 <CardContent>
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="py-2">Nama</th>
-                                <th>Email</th>
-                                <th>Tugas Review</th>
-                                <th class="text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template v-for="reviewer in reviewers" :key="reviewer.id">
-                                <tr v-if="editingId !== reviewer.id" class="border-b last:border-0">
-                                    <td class="py-2">{{ reviewer.name }}</td>
-                                    <td>{{ reviewer.email }}</td>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[600px] text-sm">
+                            <thead>
+                                <tr class="border-b text-left text-muted-foreground">
+                                    <th class="py-2">Nama</th>
+                                    <th>Tugas Review</th>
+                                    <th class="text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="reviewer in filteredReviewers"
+                                    :key="reviewer.id"
+                                    class="border-b transition-colors last:border-0 hover:bg-muted/40"
+                                >
+                                    <td class="py-3">
+                                        <div class="flex items-center gap-3">
+                                            <Avatar size="sm" shape="circle" class="shrink-0 bg-emerald-100 dark:bg-emerald-950/60">
+                                                <AvatarFallback class="text-emerald-700 dark:text-emerald-400">{{
+                                                    getInitials(reviewer.name) || '?'
+                                                }}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p class="font-medium">{{ reviewer.name }}</p>
+                                                <p class="text-xs text-muted-foreground">{{ reviewer.email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td>
                                         <Badge variant="secondary">{{ reviewer.review_assignments_count }}</Badge>
                                     </td>
-                                    <td class="space-x-2 text-right">
-                                        <Button variant="outline" size="sm" @click="startEdit(reviewer)">Ubah</Button>
-                                        <Button variant="destructive" size="sm" @click="destroy(reviewer)">Hapus</Button>
+                                    <td class="text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <Link :href="route('admin.reviewers.edit', reviewer.id)">
+                                                <Button variant="outline" size="sm" class="gap-1.5"><Pencil class="size-3.5" /> Ubah</Button>
+                                            </Link>
+                                            <Button variant="destructive" size="sm" class="gap-1.5" @click="destroy(reviewer)">
+                                                <Trash2 class="size-3.5" /> Hapus
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
-                                <tr v-else class="border-b bg-muted/40 last:border-0">
-                                    <td colspan="4" class="py-3">
-                                        <form class="grid gap-3" @submit.prevent="submitEdit(reviewer.id)">
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_name_${reviewer.id}`">Nama</Label>
-                                                    <Input :id="`edit_name_${reviewer.id}`" v-model="editForm.name" required />
-                                                    <p v-if="editForm.errors.name" class="text-sm text-destructive">{{ editForm.errors.name }}</p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_email_${reviewer.id}`">Email</Label>
-                                                    <Input :id="`edit_email_${reviewer.id}`" v-model="editForm.email" type="email" required />
-                                                    <p v-if="editForm.errors.email" class="text-sm text-destructive">{{ editForm.errors.email }}</p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_password_${reviewer.id}`">Kata Sandi Baru (opsional)</Label>
-                                                    <Input :id="`edit_password_${reviewer.id}`" v-model="editForm.password" type="password" />
-                                                    <p v-if="editForm.errors.password" class="text-sm text-destructive">
-                                                        {{ editForm.errors.password }}
-                                                    </p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_password_confirmation_${reviewer.id}`">Konfirmasi Kata Sandi</Label>
-                                                    <Input
-                                                        :id="`edit_password_confirmation_${reviewer.id}`"
-                                                        v-model="editForm.password_confirmation"
-                                                        type="password"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <Button type="submit" size="sm" :disabled="editForm.processing">Simpan Perubahan</Button>
-                                                <Button type="button" variant="outline" size="sm" @click="cancelEdit">Batal</Button>
-                                            </div>
-                                        </form>
+                                <tr v-if="filteredReviewers.length === 0">
+                                    <td colspan="3" class="py-10 text-center text-muted-foreground">
+                                        {{ search ? 'Tidak ada reviewer yang cocok dengan pencarian.' : 'Belum ada akun reviewer.' }}
                                     </td>
                                 </tr>
-                            </template>
-                            <tr v-if="reviewers.length === 0">
-                                <td colspan="4" class="py-6 text-center text-muted-foreground">Belum ada akun reviewer.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

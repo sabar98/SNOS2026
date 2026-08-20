@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { articleStatusLabels, articleStatusVariants, reviewerAssignmentStatusLabels, reviewerAssignmentStatusVariants } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { FileText } from 'lucide-vue-next';
 
 interface ReviewerAssignment {
     id: number;
@@ -71,8 +73,10 @@ function issueLoa() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
+            <PageHeader :icon="FileText" title="Detail Artikel" description="Kelola status, penugasan reviewer, dan LoA artikel ini." />
+
             <Card class="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
-                <CardHeader class="flex flex-row items-center justify-between space-y-0">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
                     <CardTitle class="text-amber-800 dark:text-amber-300">{{ article.title }}</CardTitle>
                     <Badge :variant="articleStatusVariants[article.status] ?? 'secondary'">
                         {{ articleStatusLabels[article.status] ?? article.status }}
@@ -96,7 +100,7 @@ function issueLoa() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card class="border-indigo-100 bg-indigo-50 dark:border-border dark:bg-indigo-950/40">
                 <CardHeader><CardTitle class="text-base">Pemeriksaan Administrasi</CardTitle></CardHeader>
                 <CardContent>
                     <form class="grid gap-3" @submit.prevent="submitDecision">
@@ -115,7 +119,7 @@ function issueLoa() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card class="border-emerald-100 bg-emerald-50 dark:border-border dark:bg-emerald-950/40">
                 <CardHeader><CardTitle class="text-base">Reviewer</CardTitle></CardHeader>
                 <CardContent class="space-y-2 text-sm">
                     <div v-for="assignment in article.reviewer_assignments" :key="assignment.id" class="flex items-center justify-between">

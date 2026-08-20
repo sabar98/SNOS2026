@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { certificateRoleLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
+import { Award, Download } from 'lucide-vue-next';
 
 interface Certificate {
     id: number;
@@ -56,14 +59,23 @@ function submitEvaluation(registrationId: number) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
+            <PageHeader :icon="Award" title="Sertifikat" description="Unduh sertifikat Anda dan pantau kelayakan kegiatan." />
+
+            <EmptyState
+                v-if="certificates.length === 0"
+                :icon="Award"
+                title="Belum ada sertifikat"
+                description="Sertifikat akan diterbitkan setelah Anda memenuhi seluruh syarat kelayakan di bawah ini."
+            />
+
             <Card
                 v-for="certificate in certificates"
                 :key="certificate.id"
-                class="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40"
+                class="border-emerald-200 bg-emerald-50 transition-shadow duration-200 hover:shadow-md dark:border-emerald-900 dark:bg-emerald-950/40"
             >
                 <CardHeader>
-                    <CardTitle class="text-base text-emerald-800 dark:text-emerald-300">
-                        Sertifikat {{ certificateRoleLabels[certificate.role] ?? certificate.role }}
+                    <CardTitle class="flex items-center gap-2 text-base text-emerald-800 dark:text-emerald-300">
+                        <Award class="size-4" /> Sertifikat {{ certificateRoleLabels[certificate.role] ?? certificate.role }}
                     </CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-2 text-sm">
@@ -72,14 +84,10 @@ function submitEvaluation(registrationId: number) {
                     </p>
                     <p v-if="certificate.jp_hours">Jumlah JP: {{ certificate.jp_hours }}</p>
                     <a v-if="certificate.file_path" :href="`/storage/${certificate.file_path}`" target="_blank">
-                        <Button size="sm">Unduh Sertifikat</Button>
+                        <Button size="sm"><Download class="size-4" /> Unduh Sertifikat</Button>
                     </a>
                 </CardContent>
             </Card>
-
-            <div v-if="certificates.length === 0" class="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                Belum ada sertifikat yang diterbitkan.
-            </div>
 
             <Card v-for="registration in registrations" :key="registration.id">
                 <CardHeader>

@@ -21,6 +21,23 @@ test('an admin can create a pimpinan account', function () {
     expect($leader->email_verified_at)->not->toBeNull();
 });
 
+test('an admin can view the create and edit pimpinan pages', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $leader = User::factory()->create(['name' => 'Pimpinan Uji']);
+    $leader->assignRole('pimpinan');
+
+    $this->actingAs($admin)->get('/admin/pimpinan/create')->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/PimpinanForm')
+    );
+
+    $this->actingAs($admin)->get("/admin/pimpinan/{$leader->id}/edit")->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/PimpinanForm')
+        ->where('pimpinan.id', $leader->id)
+        ->where('pimpinan.name', 'Pimpinan Uji')
+    );
+});
+
 test('an admin can update a pimpinan account without changing the password', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
@@ -110,4 +127,6 @@ test('a non-admin cannot manage pimpinan accounts', function () {
     ])->assertForbidden();
 
     $this->actingAs($participant)->delete("/admin/pimpinan/{$leader->id}")->assertForbidden();
+    $this->actingAs($participant)->get('/admin/pimpinan/create')->assertForbidden();
+    $this->actingAs($participant)->get("/admin/pimpinan/{$leader->id}/edit")->assertForbidden();
 });

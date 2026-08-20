@@ -35,4 +35,12 @@ return [
         'peserta_umum' => 150000,
         'peserta_mahasiswa' => 100000,
     ],
+    'organizer' => 'Universitas Contoh',
+    'contact' => [
+        'email' => 'snos2026@contoh.ac.id',
+        'phone' => '+62 812-3456-7890',
+        'facebook' => 'https://facebook.com/snos2026',
+        'instagram' => 'https://instagram.com/snos2026',
+        'address' => 'Gedung Auditorium Universitas Contoh, Jl. Contoh No. 1, Kota Contoh',
+    ],
 ];

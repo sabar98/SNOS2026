@@ -55,6 +55,74 @@ test('an admin can create a schedule session and add an accepted article as a sl
     expect($article->eventRegistration->status)->toBe('jadwal_ditetapkan');
 });
 
+test('an admin can update a schedule session', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $session = ScheduleSession::factory()->create(['session_number' => 'A1', 'room' => 'Ruang Lama']);
+
+    $response = $this->actingAs($admin)->put("/admin/schedule-sessions/{$session->id}", [
+        'session_number' => 'A2',
+        'room' => 'Ruang Baru',
+        'date' => '2026-11-13',
+        'start_time' => '10:00',
+        'end_time' => '10:30',
+    ]);
+
+    $response->assertRedirect();
+    $session->refresh();
+    expect($session->session_number)->toBe('A2');
+    expect($session->room)->toBe('Ruang Baru');
+});
+
+test('an admin can delete a schedule session', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $session = ScheduleSession::factory()->create();
+
+    $response = $this->actingAs($admin)->delete("/admin/schedule-sessions/{$session->id}");
+
+    $response->assertRedirect();
+    expect(ScheduleSession::find($session->id))->toBeNull();
+});
+
+test('an admin can remove a presentation slot from a session', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $article = makeAcceptedArticle();
+    $session = ScheduleSession::factory()->create();
+    $slot = PresentationSlot::factory()->create([
+        'schedule_session_id' => $session->id,
+        'article_id' => $article->id,
+    ]);
+
+    $response = $this->actingAs($admin)->delete("/admin/slots/{$slot->id}");
+
+    $response->assertRedirect();
+    expect(PresentationSlot::find($slot->id))->toBeNull();
+});
+
+test('a non-admin cannot manage schedule sessions', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $session = ScheduleSession::factory()->create();
+
+    $this->actingAs($participant)->post('/admin/schedule-sessions', [
+        'session_number' => 'X1',
+        'date' => '2026-11-12',
+        'start_time' => '09:00',
+        'end_time' => '09:30',
+    ])->assertForbidden();
+
+    $this->actingAs($participant)->put("/admin/schedule-sessions/{$session->id}", [
+        'session_number' => 'X1',
+        'date' => '2026-11-12',
+        'start_time' => '09:00',
+        'end_time' => '09:30',
+    ])->assertForbidden();
+
+    $this->actingAs($participant)->delete("/admin/schedule-sessions/{$session->id}")->assertForbidden();
+});
+
 test('a moderator can record attendance and submit an assessment for their own session', function () {
     $moderator = User::factory()->create();
     $moderator->assignRole('moderator');

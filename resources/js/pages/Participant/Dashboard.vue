@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { participantTypeLabels, registrationStatusLabels, registrationStatusVariants } from '@/lib/labels';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { CalendarPlus, ClipboardList } from 'lucide-vue-next';
 
 interface Registration {
     id: number;
@@ -22,15 +25,28 @@ defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/participant/dashboard' }];
+const page = usePage<SharedData>();
 </script>
 
 <template>
     <Head title="Dashboard Peserta" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-1 flex-col gap-4 p-4">
+        <div class="flex flex-1 flex-col gap-6 p-4">
+            <PageHeader
+                :icon="ClipboardList"
+                :title="`Halo, ${page.props.auth.user.name.split(' ')[0]}`"
+                description="Pantau pendaftaran dan progres kegiatan SNOS 2026 Anda di sini."
+            >
+                <template #actions>
+                    <Link :href="route('participant.registrations.create')">
+                        <Button size="sm"><CalendarPlus class="size-4" /> Daftar Kegiatan Baru</Button>
+                    </Link>
+                </template>
+            </PageHeader>
+
             <Card v-if="!profileComplete" class="border-amber-400/50 bg-amber-50 dark:bg-amber-950">
-                <CardContent class="flex items-center justify-between py-4">
+                <CardContent class="flex flex-wrap items-center justify-between gap-3 py-4">
                     <p class="text-sm">Lengkapi profil Anda terlebih dahulu sebelum mendaftar kegiatan.</p>
                     <Link :href="route('participant.profile.edit')">
                         <Button size="sm">Lengkapi Profil</Button>
@@ -38,19 +54,17 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/participant
                 </CardContent>
             </Card>
 
-            <div class="flex items-center justify-between">
-                <h1 class="text-xl font-semibold">Pendaftaran Saya</h1>
-                <Link :href="route('participant.registrations.create')">
-                    <Button size="sm">Daftar Kegiatan Baru</Button>
-                </Link>
-            </div>
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pendaftaran Saya</h2>
 
-            <div v-if="registrations.length === 0" class="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                Belum ada pendaftaran. Klik "Daftar Kegiatan Baru" untuk memulai.
-            </div>
+            <EmptyState
+                v-if="registrations.length === 0"
+                :icon="ClipboardList"
+                title="Belum ada pendaftaran"
+                description='Klik "Daftar Kegiatan Baru" di atas untuk memulai pendaftaran Anda.'
+            />
 
             <div v-for="registration in registrations" :key="registration.id" class="grid gap-4 md:grid-cols-2">
-                <Card>
+                <Card class="transition-shadow duration-200 hover:shadow-md">
                     <CardHeader>
                         <CardTitle class="flex items-center justify-between text-base">
                             <span>{{ registration.registration_number }}</span>

@@ -56,7 +56,7 @@ const highlights = [
                 {{ name }}
             </Link>
 
-            <div class="mx-auto w-full max-w-sm space-y-6">
+            <div class="mx-auto w-full max-w-md space-y-6">
                 <div class="space-y-2" v-if="title || description">
                     <h1 class="text-2xl font-semibold tracking-tight" v-if="title">{{ title }}</h1>
                     <p class="text-sm text-muted-foreground" v-if="description">{{ description }}</p>

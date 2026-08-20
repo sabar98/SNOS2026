@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { announcementTypeLabels, announcementTypeVariants } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import { Megaphone } from 'lucide-vue-next';
 
 interface Announcement {
     id: number;
@@ -28,11 +31,11 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Pengumuman', href: '/participan
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
-            <div v-if="announcements.length === 0" class="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                Belum ada pengumuman.
-            </div>
+            <PageHeader :icon="Megaphone" title="Pengumuman" description="Berita dan pengumuman terbaru seputar SNOS 2026." />
 
-            <Card v-for="announcement in announcements" :key="announcement.id" class="overflow-hidden">
+            <EmptyState v-if="announcements.length === 0" :icon="Megaphone" title="Belum ada pengumuman" />
+
+            <Card v-for="announcement in announcements" :key="announcement.id" class="overflow-hidden transition-shadow duration-200 hover:shadow-md">
                 <img
                     v-if="announcement.file_path"
                     :src="`/storage/${announcement.file_path}`"

@@ -24,6 +24,11 @@ class ModeratorController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/ModeratorForm');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -41,7 +46,16 @@ class ModeratorController extends Controller
 
         $moderator->assignRole('moderator');
 
-        return back()->with('status', 'moderator-created');
+        return redirect()->route('admin.moderators.index')->with('status', 'moderator-created');
+    }
+
+    public function edit(User $moderator): Response
+    {
+        abort_unless($moderator->hasRole('moderator'), 404);
+
+        return Inertia::render('Admin/ModeratorForm', [
+            'moderator' => $moderator->only(['id', 'name', 'email']),
+        ]);
     }
 
     public function update(Request $request, User $moderator): RedirectResponse
@@ -63,7 +77,7 @@ class ModeratorController extends Controller
 
         $moderator->save();
 
-        return back()->with('status', 'moderator-updated');
+        return redirect()->route('admin.moderators.index')->with('status', 'moderator-updated');
     }
 
     public function destroy(User $moderator): RedirectResponse
@@ -72,6 +86,6 @@ class ModeratorController extends Controller
 
         $moderator->delete();
 
-        return back()->with('status', 'moderator-deleted');
+        return redirect()->route('admin.moderators.index')->with('status', 'moderator-deleted');
     }
 }

@@ -21,6 +21,23 @@ test('an admin can create a reviewer account', function () {
     expect($reviewer->email_verified_at)->not->toBeNull();
 });
 
+test('an admin can view the create and edit reviewer pages', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $reviewer = User::factory()->create(['name' => 'Reviewer Uji']);
+    $reviewer->assignRole('reviewer');
+
+    $this->actingAs($admin)->get('/admin/reviewers/create')->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/ReviewerForm')
+    );
+
+    $this->actingAs($admin)->get("/admin/reviewers/{$reviewer->id}/edit")->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/ReviewerForm')
+        ->where('reviewer.id', $reviewer->id)
+        ->where('reviewer.name', 'Reviewer Uji')
+    );
+});
+
 test('an admin can update a reviewer account without changing the password', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
@@ -110,4 +127,6 @@ test('a non-admin cannot manage reviewer accounts', function () {
     ])->assertForbidden();
 
     $this->actingAs($participant)->delete("/admin/reviewers/{$reviewer->id}")->assertForbidden();
+    $this->actingAs($participant)->get('/admin/reviewers/create')->assertForbidden();
+    $this->actingAs($participant)->get("/admin/reviewers/{$reviewer->id}/edit")->assertForbidden();
 });

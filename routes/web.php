@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CertificateTemplateController;
 use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JournalController as AdminJournalController;
+use App\Http\Controllers\Admin\LandingSettingController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\NarasumberController as AdminNarasumberController;
 use App\Http\Controllers\Admin\ParticipantController as AdminParticipantController;
@@ -100,27 +101,39 @@ Route::middleware('auth')->group(function () {
 
         Route::get('reviewer-assignments', [ReviewerAssignmentController::class, 'index'])->name('reviewer-assignments.index');
         Route::post('reviewer-assignments', [ReviewerAssignmentController::class, 'store'])->name('reviewer-assignments.store');
+        Route::put('reviewer-assignments/{reviewerAssignment}', [ReviewerAssignmentController::class, 'update'])->name('reviewer-assignments.update');
         Route::delete('reviewer-assignments/{reviewerAssignment}', [ReviewerAssignmentController::class, 'destroy'])->name('reviewer-assignments.destroy');
 
         Route::get('moderators', [AdminModeratorController::class, 'index'])->name('moderators.index');
+        Route::get('moderators/create', [AdminModeratorController::class, 'create'])->name('moderators.create');
         Route::post('moderators', [AdminModeratorController::class, 'store'])->name('moderators.store');
+        Route::get('moderators/{moderator}/edit', [AdminModeratorController::class, 'edit'])->name('moderators.edit');
         Route::put('moderators/{moderator}', [AdminModeratorController::class, 'update'])->name('moderators.update');
         Route::delete('moderators/{moderator}', [AdminModeratorController::class, 'destroy'])->name('moderators.destroy');
 
         Route::get('reviewers', [AdminReviewerController::class, 'index'])->name('reviewers.index');
+        Route::get('reviewers/create', [AdminReviewerController::class, 'create'])->name('reviewers.create');
         Route::post('reviewers', [AdminReviewerController::class, 'store'])->name('reviewers.store');
+        Route::get('reviewers/{reviewer}/edit', [AdminReviewerController::class, 'edit'])->name('reviewers.edit');
         Route::put('reviewers/{reviewer}', [AdminReviewerController::class, 'update'])->name('reviewers.update');
         Route::delete('reviewers/{reviewer}', [AdminReviewerController::class, 'destroy'])->name('reviewers.destroy');
 
         Route::get('pimpinan', [AdminPimpinanController::class, 'index'])->name('pimpinan.index');
+        Route::get('pimpinan/create', [AdminPimpinanController::class, 'create'])->name('pimpinan.create');
         Route::post('pimpinan', [AdminPimpinanController::class, 'store'])->name('pimpinan.store');
+        Route::get('pimpinan/{pimpinan}/edit', [AdminPimpinanController::class, 'edit'])->name('pimpinan.edit');
         Route::put('pimpinan/{pimpinan}', [AdminPimpinanController::class, 'update'])->name('pimpinan.update');
         Route::delete('pimpinan/{pimpinan}', [AdminPimpinanController::class, 'destroy'])->name('pimpinan.destroy');
 
         Route::get('narasumber', [AdminNarasumberController::class, 'index'])->name('narasumber.index');
+        Route::get('narasumber/create', [AdminNarasumberController::class, 'create'])->name('narasumber.create');
         Route::post('narasumber', [AdminNarasumberController::class, 'store'])->name('narasumber.store');
+        Route::get('narasumber/{narasumber}/edit', [AdminNarasumberController::class, 'edit'])->name('narasumber.edit');
         Route::put('narasumber/{narasumber}', [AdminNarasumberController::class, 'update'])->name('narasumber.update');
         Route::delete('narasumber/{narasumber}', [AdminNarasumberController::class, 'destroy'])->name('narasumber.destroy');
+
+        Route::get('landing-settings', [LandingSettingController::class, 'edit'])->name('landing-settings.edit');
+        Route::put('landing-settings', [LandingSettingController::class, 'update'])->name('landing-settings.update');
 
         Route::get('schedule-sessions', [ScheduleSessionController::class, 'index'])->name('schedule-sessions.index');
         Route::post('schedule-sessions', [ScheduleSessionController::class, 'store'])->name('schedule-sessions.store');

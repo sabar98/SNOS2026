@@ -21,6 +21,23 @@ test('an admin can create a moderator account', function () {
     expect($moderator->email_verified_at)->not->toBeNull();
 });
 
+test('an admin can view the create and edit moderator pages', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $moderator = User::factory()->create(['name' => 'Moderator Uji']);
+    $moderator->assignRole('moderator');
+
+    $this->actingAs($admin)->get('/admin/moderators/create')->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/ModeratorForm')
+    );
+
+    $this->actingAs($admin)->get("/admin/moderators/{$moderator->id}/edit")->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/ModeratorForm')
+        ->where('moderator.id', $moderator->id)
+        ->where('moderator.name', 'Moderator Uji')
+    );
+});
+
 test('an admin can update a moderator account without changing the password', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
@@ -110,4 +127,6 @@ test('a non-admin cannot manage moderator accounts', function () {
     ])->assertForbidden();
 
     $this->actingAs($participant)->delete("/admin/moderators/{$moderator->id}")->assertForbidden();
+    $this->actingAs($participant)->get('/admin/moderators/create')->assertForbidden();
+    $this->actingAs($participant)->get("/admin/moderators/{$moderator->id}/edit")->assertForbidden();
 });

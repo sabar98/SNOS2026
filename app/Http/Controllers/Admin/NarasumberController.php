@@ -24,6 +24,11 @@ class NarasumberController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/NarasumberForm');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -41,7 +46,16 @@ class NarasumberController extends Controller
 
         $speaker->assignRole('narasumber');
 
-        return back()->with('status', 'narasumber-created');
+        return redirect()->route('admin.narasumber.index')->with('status', 'narasumber-created');
+    }
+
+    public function edit(User $narasumber): Response
+    {
+        abort_unless($narasumber->hasRole('narasumber'), 404);
+
+        return Inertia::render('Admin/NarasumberForm', [
+            'narasumber' => $narasumber->only(['id', 'name', 'email']),
+        ]);
     }
 
     public function update(Request $request, User $narasumber): RedirectResponse
@@ -63,7 +77,7 @@ class NarasumberController extends Controller
 
         $narasumber->save();
 
-        return back()->with('status', 'narasumber-updated');
+        return redirect()->route('admin.narasumber.index')->with('status', 'narasumber-updated');
     }
 
     public function destroy(User $narasumber): RedirectResponse
@@ -72,6 +86,6 @@ class NarasumberController extends Controller
 
         $narasumber->delete();
 
-        return back()->with('status', 'narasumber-deleted');
+        return redirect()->route('admin.narasumber.index')->with('status', 'narasumber-deleted');
     }
 }

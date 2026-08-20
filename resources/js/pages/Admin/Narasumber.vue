@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useInitials } from '@/composables/useInitials';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { Award, Pencil, Presentation, Search, Trash2, UserPlus, Users } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 interface Speaker {
     id: number;
@@ -16,57 +19,23 @@ interface Speaker {
     certificates_count: number;
 }
 
-defineProps<{
+const props = defineProps<{
     narasumber: Speaker[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Narasumber', href: '/admin/narasumber' }];
 
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
+const { getInitials } = useInitials();
+
+const search = ref('');
+
+const filteredNarasumber = computed(() => {
+    const query = search.value.trim().toLowerCase();
+    if (!query) return props.narasumber;
+    return props.narasumber.filter((s) => s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query));
 });
 
-function submit() {
-    form.post(route('admin.narasumber.store'), {
-        preserveScroll: true,
-        onSuccess: () => form.reset(),
-    });
-}
-
-const editingId = ref<number | null>(null);
-const editForm = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-});
-
-function startEdit(speaker: Speaker) {
-    editingId.value = speaker.id;
-    editForm.reset();
-    editForm.clearErrors();
-    editForm.name = speaker.name;
-    editForm.email = speaker.email;
-}
-
-function cancelEdit() {
-    editingId.value = null;
-    editForm.reset();
-    editForm.clearErrors();
-}
-
-function submitEdit(speakerId: number) {
-    editForm.put(route('admin.narasumber.update', speakerId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            editingId.value = null;
-            editForm.reset();
-        },
-    });
-}
+const totalCertificates = computed(() => props.narasumber.reduce((sum, s) => sum + s.certificates_count, 0));
 
 function destroy(speaker: Speaker) {
     if (!confirm(`Hapus akun narasumber "${speaker.name}"?`)) {
@@ -80,103 +49,108 @@ function destroy(speaker: Speaker) {
     <Head title="Narasumber" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
-            <Card>
-                <CardHeader><CardTitle>Tambah Akun Narasumber</CardTitle></CardHeader>
-                <CardContent>
-                    <form class="grid gap-3" @submit.prevent="submit">
-                        <div class="grid gap-1.5">
-                            <Label for="narasumber_name">Nama</Label>
-                            <Input id="narasumber_name" v-model="form.name" required />
-                            <p v-if="form.errors.name" class="text-sm text-destructive">{{ form.errors.name }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="narasumber_email">Email</Label>
-                            <Input id="narasumber_email" v-model="form.email" type="email" required />
-                            <p v-if="form.errors.email" class="text-sm text-destructive">{{ form.errors.email }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="narasumber_password">Kata Sandi</Label>
-                            <Input id="narasumber_password" v-model="form.password" type="password" required />
-                            <p v-if="form.errors.password" class="text-sm text-destructive">{{ form.errors.password }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="narasumber_password_confirmation">Konfirmasi Kata Sandi</Label>
-                            <Input id="narasumber_password_confirmation" v-model="form.password_confirmation" type="password" required />
-                        </div>
-                        <Button type="submit" :disabled="form.processing">Simpan</Button>
-                    </form>
-                </CardContent>
-            </Card>
+        <div class="flex flex-1 flex-col gap-6 p-4">
+            <PageHeader
+                :icon="Presentation"
+                icon-class="bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400"
+                title="Narasumber"
+                description="Kelola akun narasumber / pembicara tamu SNOS 2026."
+            >
+                <template #actions>
+                    <Link :href="route('admin.narasumber.create')">
+                        <Button class="gap-2"><UserPlus class="size-4" /> Tambah Narasumber</Button>
+                    </Link>
+                </template>
+            </PageHeader>
 
-            <Card>
-                <CardHeader><CardTitle>Daftar Narasumber</CardTitle></CardHeader>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                    <CardContent class="flex items-center gap-4 pt-6">
+                        <span
+                            class="flex size-11 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400"
+                        >
+                            <Users class="size-5" />
+                        </span>
+                        <div>
+                            <p class="text-2xl font-bold tracking-tight">{{ narasumber.length }}</p>
+                            <p class="text-sm text-muted-foreground">Akun Narasumber</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                    <CardContent class="flex items-center gap-4 pt-6">
+                        <span
+                            class="flex size-11 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400"
+                        >
+                            <Award class="size-5" />
+                        </span>
+                        <div>
+                            <p class="text-2xl font-bold tracking-tight">{{ totalCertificates }}</p>
+                            <p class="text-sm text-muted-foreground">Sertifikat Diterbitkan</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                    <CardTitle class="flex items-center gap-2"><Users class="size-4 text-muted-foreground" /> Daftar Narasumber</CardTitle>
+                    <div class="relative w-full max-w-xs">
+                        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input v-model="search" placeholder="Cari nama atau email..." class="pl-9" />
+                    </div>
+                </CardHeader>
                 <CardContent>
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="py-2">Nama</th>
-                                <th>Email</th>
-                                <th>Sertifikat</th>
-                                <th class="text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template v-for="speaker in narasumber" :key="speaker.id">
-                                <tr v-if="editingId !== speaker.id" class="border-b last:border-0">
-                                    <td class="py-2">{{ speaker.name }}</td>
-                                    <td>{{ speaker.email }}</td>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[600px] text-sm">
+                            <thead>
+                                <tr class="border-b text-left text-muted-foreground">
+                                    <th class="py-2">Nama</th>
+                                    <th>Sertifikat</th>
+                                    <th class="text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="speaker in filteredNarasumber"
+                                    :key="speaker.id"
+                                    class="border-b transition-colors last:border-0 hover:bg-muted/40"
+                                >
+                                    <td class="py-3">
+                                        <div class="flex items-center gap-3">
+                                            <Avatar size="sm" shape="circle" class="shrink-0 bg-sky-100 dark:bg-sky-950/60">
+                                                <AvatarFallback class="text-sky-700 dark:text-sky-400">{{
+                                                    getInitials(speaker.name) || '?'
+                                                }}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p class="font-medium">{{ speaker.name }}</p>
+                                                <p class="text-xs text-muted-foreground">{{ speaker.email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td>
                                         <Badge variant="secondary">{{ speaker.certificates_count }}</Badge>
                                     </td>
-                                    <td class="space-x-2 text-right">
-                                        <Button variant="outline" size="sm" @click="startEdit(speaker)">Ubah</Button>
-                                        <Button variant="destructive" size="sm" @click="destroy(speaker)">Hapus</Button>
+                                    <td class="text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <Link :href="route('admin.narasumber.edit', speaker.id)">
+                                                <Button variant="outline" size="sm" class="gap-1.5"><Pencil class="size-3.5" /> Ubah</Button>
+                                            </Link>
+                                            <Button variant="destructive" size="sm" class="gap-1.5" @click="destroy(speaker)">
+                                                <Trash2 class="size-3.5" /> Hapus
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
-                                <tr v-else class="border-b bg-muted/40 last:border-0">
-                                    <td colspan="4" class="py-3">
-                                        <form class="grid gap-3" @submit.prevent="submitEdit(speaker.id)">
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_name_${speaker.id}`">Nama</Label>
-                                                    <Input :id="`edit_name_${speaker.id}`" v-model="editForm.name" required />
-                                                    <p v-if="editForm.errors.name" class="text-sm text-destructive">{{ editForm.errors.name }}</p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_email_${speaker.id}`">Email</Label>
-                                                    <Input :id="`edit_email_${speaker.id}`" v-model="editForm.email" type="email" required />
-                                                    <p v-if="editForm.errors.email" class="text-sm text-destructive">{{ editForm.errors.email }}</p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_password_${speaker.id}`">Kata Sandi Baru (opsional)</Label>
-                                                    <Input :id="`edit_password_${speaker.id}`" v-model="editForm.password" type="password" />
-                                                    <p v-if="editForm.errors.password" class="text-sm text-destructive">
-                                                        {{ editForm.errors.password }}
-                                                    </p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_password_confirmation_${speaker.id}`">Konfirmasi Kata Sandi</Label>
-                                                    <Input
-                                                        :id="`edit_password_confirmation_${speaker.id}`"
-                                                        v-model="editForm.password_confirmation"
-                                                        type="password"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <Button type="submit" size="sm" :disabled="editForm.processing">Simpan Perubahan</Button>
-                                                <Button type="button" variant="outline" size="sm" @click="cancelEdit">Batal</Button>
-                                            </div>
-                                        </form>
+                                <tr v-if="filteredNarasumber.length === 0">
+                                    <td colspan="3" class="py-10 text-center text-muted-foreground">
+                                        {{ search ? 'Tidak ada narasumber yang cocok dengan pencarian.' : 'Belum ada akun narasumber.' }}
                                     </td>
                                 </tr>
-                            </template>
-                            <tr v-if="narasumber.length === 0">
-                                <td colspan="4" class="py-6 text-center text-muted-foreground">Belum ada akun narasumber.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

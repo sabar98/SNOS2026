@@ -22,6 +22,23 @@ test('an admin can create a narasumber account', function () {
     expect($speaker->email_verified_at)->not->toBeNull();
 });
 
+test('an admin can view the create and edit narasumber pages', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $speaker = User::factory()->create(['name' => 'Narasumber Uji']);
+    $speaker->assignRole('narasumber');
+
+    $this->actingAs($admin)->get('/admin/narasumber/create')->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/NarasumberForm')
+    );
+
+    $this->actingAs($admin)->get("/admin/narasumber/{$speaker->id}/edit")->assertOk()->assertInertia(fn ($page) => $page
+        ->component('Admin/NarasumberForm')
+        ->where('narasumber.id', $speaker->id)
+        ->where('narasumber.name', 'Narasumber Uji')
+    );
+});
+
 test('an admin can update a narasumber account without changing the password', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
@@ -111,6 +128,8 @@ test('a non-admin cannot manage narasumber accounts', function () {
     ])->assertForbidden();
 
     $this->actingAs($participant)->delete("/admin/narasumber/{$speaker->id}")->assertForbidden();
+    $this->actingAs($participant)->get('/admin/narasumber/create')->assertForbidden();
+    $this->actingAs($participant)->get("/admin/narasumber/{$speaker->id}/edit")->assertForbidden();
 });
 
 test('a narasumber account is redirected to its own dashboard and can log in successfully', function () {

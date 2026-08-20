@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useInitials } from '@/composables/useInitials';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { Crown, Pencil, Search, Trash2, UserPlus, Users } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 interface Leader {
     id: number;
@@ -14,57 +17,21 @@ interface Leader {
     email: string;
 }
 
-defineProps<{
+const props = defineProps<{
     pimpinan: Leader[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Pimpinan', href: '/admin/pimpinan' }];
 
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
+const { getInitials } = useInitials();
+
+const search = ref('');
+
+const filteredPimpinan = computed(() => {
+    const query = search.value.trim().toLowerCase();
+    if (!query) return props.pimpinan;
+    return props.pimpinan.filter((p) => p.name.toLowerCase().includes(query) || p.email.toLowerCase().includes(query));
 });
-
-function submit() {
-    form.post(route('admin.pimpinan.store'), {
-        preserveScroll: true,
-        onSuccess: () => form.reset(),
-    });
-}
-
-const editingId = ref<number | null>(null);
-const editForm = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-});
-
-function startEdit(leader: Leader) {
-    editingId.value = leader.id;
-    editForm.reset();
-    editForm.clearErrors();
-    editForm.name = leader.name;
-    editForm.email = leader.email;
-}
-
-function cancelEdit() {
-    editingId.value = null;
-    editForm.reset();
-    editForm.clearErrors();
-}
-
-function submitEdit(leaderId: number) {
-    editForm.put(route('admin.pimpinan.update', leaderId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            editingId.value = null;
-            editForm.reset();
-        },
-    });
-}
 
 function destroy(leader: Leader) {
     if (!confirm(`Hapus akun pimpinan "${leader.name}"?`)) {
@@ -78,99 +45,89 @@ function destroy(leader: Leader) {
     <Head title="Pimpinan" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
-            <Card>
-                <CardHeader><CardTitle>Tambah Akun Pimpinan</CardTitle></CardHeader>
-                <CardContent>
-                    <form class="grid gap-3" @submit.prevent="submit">
-                        <div class="grid gap-1.5">
-                            <Label for="pimpinan_name">Nama</Label>
-                            <Input id="pimpinan_name" v-model="form.name" required />
-                            <p v-if="form.errors.name" class="text-sm text-destructive">{{ form.errors.name }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="pimpinan_email">Email</Label>
-                            <Input id="pimpinan_email" v-model="form.email" type="email" required />
-                            <p v-if="form.errors.email" class="text-sm text-destructive">{{ form.errors.email }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="pimpinan_password">Kata Sandi</Label>
-                            <Input id="pimpinan_password" v-model="form.password" type="password" required />
-                            <p v-if="form.errors.password" class="text-sm text-destructive">{{ form.errors.password }}</p>
-                        </div>
-                        <div class="grid gap-1.5">
-                            <Label for="pimpinan_password_confirmation">Konfirmasi Kata Sandi</Label>
-                            <Input id="pimpinan_password_confirmation" v-model="form.password_confirmation" type="password" required />
-                        </div>
-                        <Button type="submit" :disabled="form.processing">Simpan</Button>
-                    </form>
+        <div class="flex flex-1 flex-col gap-6 p-4">
+            <PageHeader
+                :icon="Crown"
+                icon-class="bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                title="Pimpinan"
+                description="Kelola akun pimpinan dengan akses dashboard statistik SNOS 2026."
+            >
+                <template #actions>
+                    <Link :href="route('admin.pimpinan.create')">
+                        <Button class="gap-2"><UserPlus class="size-4" /> Tambah Pimpinan</Button>
+                    </Link>
+                </template>
+            </PageHeader>
+
+            <Card class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
+                <CardContent class="flex items-center gap-4 pt-6">
+                    <span
+                        class="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                    >
+                        <Users class="size-5" />
+                    </span>
+                    <div>
+                        <p class="text-2xl font-bold tracking-tight">{{ pimpinan.length }}</p>
+                        <p class="text-sm text-muted-foreground">Akun Pimpinan</p>
+                    </div>
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader><CardTitle>Daftar Pimpinan</CardTitle></CardHeader>
+            <Card class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                    <CardTitle class="flex items-center gap-2"><Users class="size-4 text-muted-foreground" /> Daftar Pimpinan</CardTitle>
+                    <div class="relative w-full max-w-xs">
+                        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input v-model="search" placeholder="Cari nama atau email..." class="pl-9" />
+                    </div>
+                </CardHeader>
                 <CardContent>
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="py-2">Nama</th>
-                                <th>Email</th>
-                                <th class="text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template v-for="leader in pimpinan" :key="leader.id">
-                                <tr v-if="editingId !== leader.id" class="border-b last:border-0">
-                                    <td class="py-2">{{ leader.name }}</td>
-                                    <td>{{ leader.email }}</td>
-                                    <td class="space-x-2 text-right">
-                                        <Button variant="outline" size="sm" @click="startEdit(leader)">Ubah</Button>
-                                        <Button variant="destructive" size="sm" @click="destroy(leader)">Hapus</Button>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[480px] text-sm">
+                            <thead>
+                                <tr class="border-b text-left text-muted-foreground">
+                                    <th class="py-2">Nama</th>
+                                    <th class="text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="leader in filteredPimpinan"
+                                    :key="leader.id"
+                                    class="border-b transition-colors last:border-0 hover:bg-muted/40"
+                                >
+                                    <td class="py-3">
+                                        <div class="flex items-center gap-3">
+                                            <Avatar size="sm" shape="circle" class="shrink-0 bg-amber-100 dark:bg-amber-950/60">
+                                                <AvatarFallback class="text-amber-700 dark:text-amber-400">{{
+                                                    getInitials(leader.name) || '?'
+                                                }}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p class="font-medium">{{ leader.name }}</p>
+                                                <p class="text-xs text-muted-foreground">{{ leader.email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <Link :href="route('admin.pimpinan.edit', leader.id)">
+                                                <Button variant="outline" size="sm" class="gap-1.5"><Pencil class="size-3.5" /> Ubah</Button>
+                                            </Link>
+                                            <Button variant="destructive" size="sm" class="gap-1.5" @click="destroy(leader)">
+                                                <Trash2 class="size-3.5" /> Hapus
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
-                                <tr v-else class="border-b bg-muted/40 last:border-0">
-                                    <td colspan="3" class="py-3">
-                                        <form class="grid gap-3" @submit.prevent="submitEdit(leader.id)">
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_name_${leader.id}`">Nama</Label>
-                                                    <Input :id="`edit_name_${leader.id}`" v-model="editForm.name" required />
-                                                    <p v-if="editForm.errors.name" class="text-sm text-destructive">{{ editForm.errors.name }}</p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_email_${leader.id}`">Email</Label>
-                                                    <Input :id="`edit_email_${leader.id}`" v-model="editForm.email" type="email" required />
-                                                    <p v-if="editForm.errors.email" class="text-sm text-destructive">{{ editForm.errors.email }}</p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_password_${leader.id}`">Kata Sandi Baru (opsional)</Label>
-                                                    <Input :id="`edit_password_${leader.id}`" v-model="editForm.password" type="password" />
-                                                    <p v-if="editForm.errors.password" class="text-sm text-destructive">
-                                                        {{ editForm.errors.password }}
-                                                    </p>
-                                                </div>
-                                                <div class="grid gap-1.5">
-                                                    <Label :for="`edit_password_confirmation_${leader.id}`">Konfirmasi Kata Sandi</Label>
-                                                    <Input
-                                                        :id="`edit_password_confirmation_${leader.id}`"
-                                                        v-model="editForm.password_confirmation"
-                                                        type="password"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <Button type="submit" size="sm" :disabled="editForm.processing">Simpan Perubahan</Button>
-                                                <Button type="button" variant="outline" size="sm" @click="cancelEdit">Batal</Button>
-                                            </div>
-                                        </form>
+                                <tr v-if="filteredPimpinan.length === 0">
+                                    <td colspan="2" class="py-10 text-center text-muted-foreground">
+                                        {{ search ? 'Tidak ada pimpinan yang cocok dengan pencarian.' : 'Belum ada akun pimpinan.' }}
                                     </td>
                                 </tr>
-                            </template>
-                            <tr v-if="pimpinan.length === 0">
-                                <td colspan="3" class="py-6 text-center text-muted-foreground">Belum ada akun pimpinan.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

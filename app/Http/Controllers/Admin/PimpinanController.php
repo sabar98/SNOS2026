@@ -23,6 +23,11 @@ class PimpinanController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/PimpinanForm');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -40,7 +45,16 @@ class PimpinanController extends Controller
 
         $leader->assignRole('pimpinan');
 
-        return back()->with('status', 'pimpinan-created');
+        return redirect()->route('admin.pimpinan.index')->with('status', 'pimpinan-created');
+    }
+
+    public function edit(User $pimpinan): Response
+    {
+        abort_unless($pimpinan->hasRole('pimpinan'), 404);
+
+        return Inertia::render('Admin/PimpinanForm', [
+            'pimpinan' => $pimpinan->only(['id', 'name', 'email']),
+        ]);
     }
 
     public function update(Request $request, User $pimpinan): RedirectResponse
@@ -62,7 +76,7 @@ class PimpinanController extends Controller
 
         $pimpinan->save();
 
-        return back()->with('status', 'pimpinan-updated');
+        return redirect()->route('admin.pimpinan.index')->with('status', 'pimpinan-updated');
     }
 
     public function destroy(User $pimpinan): RedirectResponse
@@ -71,6 +85,6 @@ class PimpinanController extends Controller
 
         $pimpinan->delete();
 
-        return back()->with('status', 'pimpinan-deleted');
+        return redirect()->route('admin.pimpinan.index')->with('status', 'pimpinan-deleted');
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
+use App\Mail\WelcomeAccountMail;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 test('registration screen can be rendered', function () {
     $response = $this->get('/register');
@@ -28,4 +30,26 @@ test('new users can register and are immediately active with no email or WhatsAp
 
     // Follow the full redirect chain: /dashboard -> /participant/dashboard must actually load, not 403/404/500.
     $this->followingRedirects()->get(route('dashboard'))->assertOk();
+});
+
+test('a welcome email with the account credentials is sent to the address the user registered with', function () {
+    Mail::fake();
+
+    $this->post('/register', [
+        'name' => 'Test User',
+        'nik' => '3201234567891234',
+        'institution' => 'Universitas Contoh',
+        'whatsapp_number' => '081234567891',
+        'email' => 'welcome-mail@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $user = User::where('email', 'welcome-mail@example.com')->first();
+
+    Mail::assertSent(WelcomeAccountMail::class, function (WelcomeAccountMail $mail) use ($user) {
+        return $mail->hasTo('welcome-mail@example.com')
+            && $mail->user->is($user)
+            && $mail->plainPassword === 'password';
+    });
 });

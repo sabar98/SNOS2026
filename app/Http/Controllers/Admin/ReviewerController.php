@@ -24,6 +24,11 @@ class ReviewerController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/ReviewerForm');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -41,7 +46,16 @@ class ReviewerController extends Controller
 
         $reviewer->assignRole('reviewer');
 
-        return back()->with('status', 'reviewer-created');
+        return redirect()->route('admin.reviewers.index')->with('status', 'reviewer-created');
+    }
+
+    public function edit(User $reviewer): Response
+    {
+        abort_unless($reviewer->hasRole('reviewer'), 404);
+
+        return Inertia::render('Admin/ReviewerForm', [
+            'reviewer' => $reviewer->only(['id', 'name', 'email']),
+        ]);
     }
 
     public function update(Request $request, User $reviewer): RedirectResponse
@@ -63,7 +77,7 @@ class ReviewerController extends Controller
 
         $reviewer->save();
 
-        return back()->with('status', 'reviewer-updated');
+        return redirect()->route('admin.reviewers.index')->with('status', 'reviewer-updated');
     }
 
     public function destroy(User $reviewer): RedirectResponse
@@ -72,6 +86,6 @@ class ReviewerController extends Controller
 
         $reviewer->delete();
 
-        return back()->with('status', 'reviewer-deleted');
+        return redirect()->route('admin.reviewers.index')->with('status', 'reviewer-deleted');
     }
 }

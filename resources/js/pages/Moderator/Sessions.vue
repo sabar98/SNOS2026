@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { slotStatusLabels, slotStatusVariants } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { CalendarClock } from 'lucide-vue-next';
 import { reactive } from 'vue';
 
 interface Slot {
@@ -80,6 +83,19 @@ function submitAssessment(slotId: number) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
+            <PageHeader
+                :icon="CalendarClock"
+                title="Sesi Saya"
+                description="Kelola kehadiran dan penilaian presentasi pada sesi yang Anda moderatori."
+            />
+
+            <EmptyState
+                v-if="sessions.length === 0"
+                :icon="CalendarClock"
+                title="Belum ada sesi ditugaskan"
+                description="Anda belum ditugaskan sebagai moderator sesi manapun."
+            />
+
             <Card v-for="session in sessions" :key="session.id">
                 <CardHeader>
                     <CardTitle class="text-base">Sesi {{ session.session_number }} &mdash; {{ formatDate(session.date) }}</CardTitle>
@@ -171,10 +187,6 @@ function submitAssessment(slotId: number) {
                     </div>
                 </CardContent>
             </Card>
-
-            <div v-if="sessions.length === 0" class="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                Anda belum ditugaskan sebagai moderator sesi manapun.
-            </div>
         </div>
     </AppLayout>
 </template>

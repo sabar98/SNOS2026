@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,6 +89,8 @@ onUnmounted(() => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
+            <PageHeader :icon="QrCode" title="Check-in QR" description="Pindai tiket peserta atau masukkan nomor registrasi secara manual." />
+
             <div
                 v-if="status === 'checked-in'"
                 class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
@@ -95,7 +98,7 @@ onUnmounted(() => {
                 Check-in berhasil{{ checkedInName ? ` — ${checkedInName}` : '' }}.
             </div>
 
-            <Card>
+            <Card class="border-teal-100 bg-teal-50 dark:border-border dark:bg-teal-950/40">
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2"><QrCode class="size-5" /> Pindai Tiket QR</CardTitle>
                 </CardHeader>
@@ -107,7 +110,7 @@ onUnmounted(() => {
                         <CameraOff class="size-4" /> Kamera tidak tersedia. Masukkan nomor registrasi secara manual di bawah.
                     </p>
 
-                    <form class="flex items-center gap-2" @submit.prevent="submitManual">
+                    <form class="flex flex-wrap items-center gap-2" @submit.prevent="submitManual">
                         <Input v-model="manualForm.registration_number" placeholder="Atau masukkan nomor registrasi manual" />
                         <Button type="submit" :disabled="manualForm.processing">Check-in</Button>
                     </form>
@@ -117,13 +120,13 @@ onUnmounted(() => {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card class="border-teal-100 bg-teal-50 dark:border-border dark:bg-teal-950/40">
                 <CardHeader><CardTitle class="text-base">Check-in Terbaru</CardTitle></CardHeader>
                 <CardContent class="space-y-2 text-sm">
                     <div
                         v-for="registration in recentCheckIns"
                         :key="registration.id"
-                        class="flex items-center justify-between border-b pb-2 last:border-0"
+                        class="flex items-center justify-between rounded-md border-b px-2 py-2 transition-colors last:border-0 hover:bg-muted/40"
                     >
                         <div>
                             <p class="font-medium">{{ registration.user.name }}</p>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import RichTextEditor from '@/components/RichTextEditor.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +11,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { announcementTypeLabels, announcementTypeVariants } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
+import { Megaphone, PenSquare } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 interface Announcement {
@@ -69,8 +72,12 @@ function submit() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
-            <Card>
-                <CardHeader><CardTitle>Buat Pengumuman</CardTitle></CardHeader>
+            <PageHeader :icon="Megaphone" title="Pengumuman" description="Publikasikan berita dan pengumuman untuk peserta SNOS 2026." />
+
+            <Card class="border-rose-100 bg-rose-50 dark:border-border dark:bg-rose-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2"><PenSquare class="size-4 text-muted-foreground" /> Buat Pengumuman</CardTitle>
+                </CardHeader>
                 <CardContent>
                     <form class="grid gap-3" @submit.prevent="submit">
                         <select v-model="form.type" aria-label="Jenis pengumuman" :class="selectClass">
@@ -114,7 +121,18 @@ function submit() {
                 </CardContent>
             </Card>
 
-            <Card v-for="announcement in announcements" :key="announcement.id" class="overflow-hidden">
+            <EmptyState
+                v-if="announcements.length === 0"
+                :icon="Megaphone"
+                title="Belum ada pengumuman"
+                description="Pengumuman yang dipublikasikan akan tampil di sini."
+            />
+
+            <Card
+                v-for="announcement in announcements"
+                :key="announcement.id"
+                class="overflow-hidden border-rose-100 bg-rose-50 transition-shadow duration-200 hover:shadow-md dark:border-border dark:bg-rose-950/40"
+            >
                 <img
                     v-if="announcement.file_path"
                     :src="`/storage/${announcement.file_path}`"

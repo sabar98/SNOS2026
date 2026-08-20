@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import {
 } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ClipboardList } from 'lucide-vue-next';
 
 interface Payment {
     id: number;
@@ -71,6 +73,8 @@ function formatRupiah(value: string): string {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
+            <PageHeader :icon="ClipboardList" title="Detail Pendaftaran" description="Status pendaftaran, pembayaran, dan artikel Anda." />
+
             <Card class="border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40">
                 <CardHeader class="flex flex-row items-center justify-between space-y-0">
                     <CardTitle class="text-sky-800 dark:text-sky-300">{{ registration.registration_number }}</CardTitle>
@@ -109,7 +113,7 @@ function formatRupiah(value: string): string {
 
                     <form
                         v-if="payment.status === 'belum_bayar' || payment.status === 'perlu_perbaikan'"
-                        class="flex items-center gap-2 pt-2"
+                        class="flex flex-wrap items-center gap-2 pt-2"
                         @submit.prevent="uploadProof(payment.id)"
                     >
                         <input
@@ -128,7 +132,11 @@ function formatRupiah(value: string): string {
                     <CardTitle class="text-base">Artikel</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-3 text-sm">
-                    <div v-for="article in registration.articles" :key="article.id" class="flex items-center justify-between border-b pb-2">
+                    <div
+                        v-for="article in registration.articles"
+                        :key="article.id"
+                        class="flex flex-wrap items-center justify-between gap-2 border-b pb-2"
+                    >
                         <span>{{ article.title }}</span>
                         <div class="flex items-center gap-2">
                             <Badge :variant="articleStatusVariants[article.status] ?? 'secondary'">

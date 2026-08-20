@@ -100,3 +100,39 @@ test('presentation material requires a slide file and official photo on first su
 
     $response->assertSessionHasErrors(['slide', 'official_photo']);
 });
+
+test('a presenter can upload each presentation material file independently across separate requests', function () {
+    Storage::fake('public');
+    $article = makeAcceptedArticleForMaterial();
+    $user = $article->eventRegistration->user;
+    $endpoint = "/participant/articles/{$article->id}/presentation-material";
+
+    $this->actingAs($user)->post($endpoint, ['slide' => UploadedFile::fake()->create('slide.pptx', 500)])->assertRedirect();
+    $this->actingAs($user)->post($endpoint, ['video' => UploadedFile::fake()->create('video.mp4', 1000, 'video/mp4')])->assertRedirect();
+    $this->actingAs($user)->post($endpoint, ['official_photo' => UploadedFile::fake()->image('foto.jpg')])->assertRedirect();
+    $this->actingAs($user)->post($endpoint, ['short_bio' => 'Bio bertahap', 'consent' => true])->assertRedirect();
+
+    $article->refresh();
+    $material = $article->presentationMaterial;
+    expect($material)->not->toBeNull();
+    expect($material->short_bio)->toBe('Bio bertahap');
+    expect($material->consent_confirmed_at)->not->toBeNull();
+    Storage::disk('public')->assertExists($material->slide_path);
+    Storage::disk('public')->assertExists($material->video_path);
+    Storage::disk('public')->assertExists($material->official_photo_path);
+});
+
+test('a presenter cannot confirm consent without a short bio', function () {
+    Storage::fake('public');
+    $article = makeAcceptedArticleForMaterial();
+    $user = $article->eventRegistration->user;
+    $endpoint = "/participant/articles/{$article->id}/presentation-material";
+
+    $this->actingAs($user)->post($endpoint, ['slide' => UploadedFile::fake()->create('slide.pptx', 500)]);
+    $this->actingAs($user)->post($endpoint, ['official_photo' => UploadedFile::fake()->image('foto.jpg')]);
+
+    $response = $this->actingAs($user)->post($endpoint, ['consent' => true]);
+
+    $response->assertSessionHasErrors(['short_bio']);
+    expect($article->fresh()->presentationMaterial->consent_confirmed_at)->toBeNull();
+});

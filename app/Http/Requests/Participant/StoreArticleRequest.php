@@ -27,7 +27,7 @@ class StoreArticleRequest extends FormRequest
             'abstract' => ['required', 'string'],
             'keywords' => ['required', 'string', 'max:255'],
             'field' => ['required', 'string', 'max:255'],
-            'file' => ['required', 'file', 'mimes:doc,docx,pdf', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:pdf', 'max:20480'],
             'statement_letter' => ['required', 'file', 'mimes:doc,docx,pdf', 'max:10240'],
             'authors' => ['required', 'array', 'min:1'],
             'authors.*.name' => ['required', 'string', 'max:255'],

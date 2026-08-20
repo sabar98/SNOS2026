@@ -45,6 +45,7 @@ class ScheduleController extends Controller
             'tickets' => $tickets,
             'sessions' => $sessions,
             'attendedSessionIds' => $attendedSessionIds,
+            'attendanceMethod' => $registration?->attendance_method,
         ]);
     }
 }

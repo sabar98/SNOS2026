@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { certificateRoleLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { Award, BadgeCheck, Image, ListChecks } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface Certificate {
@@ -115,6 +117,8 @@ function removeTemplate(template: CertificateTemplateEntry) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
+            <PageHeader :icon="Award" title="Sertifikat" description="Terbitkan dan kelola sertifikat elektronik SNOS 2026." />
+
             <div class="grid gap-4 md:grid-cols-2">
                 <Card class="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40">
                     <CardHeader
@@ -134,8 +138,10 @@ function removeTemplate(template: CertificateTemplateEntry) {
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader><CardTitle>Terbitkan Sertifikat</CardTitle></CardHeader>
+            <Card class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2"><BadgeCheck class="size-4 text-muted-foreground" /> Terbitkan Sertifikat</CardTitle>
+                </CardHeader>
                 <CardContent>
                     <form class="grid gap-3" @submit.prevent="issue">
                         <div
@@ -170,7 +176,19 @@ function removeTemplate(template: CertificateTemplateEntry) {
                         </div>
                         <p v-if="form.errors.event_registration_id" class="text-sm text-destructive">{{ form.errors.event_registration_id }}</p>
 
-                        <div v-if="selectedRegistration" class="grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border bg-muted/40 p-3 text-sm">
+                        <div
+                            v-if="eligibleRegistrations.length === 0"
+                            class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+                        >
+                            Belum ada peserta yang memenuhi syarat sertifikat. Peserta baru bisa dipilih di sini setelah keempat hal ini terpenuhi:
+                            pembayaran terverifikasi, hadir check-in, mengisi evaluasi kegiatan, dan (khusus presenter) artikel sudah berstatus
+                            diterima.
+                        </div>
+
+                        <div
+                            v-if="selectedRegistration"
+                            class="grid grid-cols-1 gap-x-6 gap-y-1 rounded-md border bg-muted/40 p-3 text-sm sm:grid-cols-2"
+                        >
                             <div>
                                 <span class="text-muted-foreground">Nama Peserta</span>
                                 <p class="font-medium">{{ selectedRegistration.user.name }}</p>
@@ -179,7 +197,7 @@ function removeTemplate(template: CertificateTemplateEntry) {
                                 <span class="text-muted-foreground">Institusi</span>
                                 <p class="font-medium">{{ selectedRegistration.institution ?? '-' }}</p>
                             </div>
-                            <p class="col-span-2 text-xs text-muted-foreground">
+                            <p class="text-xs text-muted-foreground sm:col-span-2">
                                 Nama dan institusi diambil otomatis dari data pendaftaran, tidak perlu diketik ulang.
                             </p>
                         </div>
@@ -205,13 +223,15 @@ function removeTemplate(template: CertificateTemplateEntry) {
                 </CardContent>
             </Card>
 
-            <Card v-if="form.role">
-                <CardHeader class="flex flex-row items-center justify-between space-y-0">
-                    <CardTitle>Template Sertifikat &mdash; {{ certificateRoleLabels[form.role] ?? form.role }}</CardTitle>
+            <Card v-if="form.role" class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
+                    <CardTitle class="flex items-center gap-2">
+                        <Image class="size-4 text-muted-foreground" /> Template Sertifikat &mdash; {{ certificateRoleLabels[form.role] ?? form.role }}
+                    </CardTitle>
                     <Button as="a" :href="previewUrl" target="_blank" variant="outline" size="sm">Pratinjau Sertifikat</Button>
                 </CardHeader>
                 <CardContent class="grid gap-3">
-                    <div v-if="currentTemplate" class="flex items-center gap-4">
+                    <div v-if="currentTemplate" class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                         <img
                             :src="`/storage/${currentTemplate.file_path}`"
                             alt="Template sertifikat saat ini"
@@ -247,38 +267,47 @@ function removeTemplate(template: CertificateTemplateEntry) {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader><CardTitle>Sertifikat Diterbitkan</CardTitle></CardHeader>
+            <Card class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
+                <CardHeader class="flex flex-row items-center justify-between space-y-0">
+                    <CardTitle class="flex items-center gap-2"><ListChecks class="size-4 text-muted-foreground" /> Sertifikat Diterbitkan</CardTitle>
+                    <Badge variant="secondary">{{ certificates.data.length }} sertifikat</Badge>
+                </CardHeader>
                 <CardContent>
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="py-2">Nomor</th>
-                                <th>Nama</th>
-                                <th>Peran</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="certificate in certificates.data" :key="certificate.id" class="border-b last:border-0">
-                                <td class="py-2 font-mono">{{ certificate.certificate_number }}</td>
-                                <td>{{ certificate.user.name }}</td>
-                                <td>
-                                    <Badge variant="success">{{ certificateRoleLabels[certificate.role] ?? certificate.role }}</Badge>
-                                </td>
-                                <td>
-                                    <a
-                                        v-if="certificate.file_path"
-                                        :href="`/storage/${certificate.file_path}`"
-                                        target="_blank"
-                                        class="text-primary underline"
-                                    >
-                                        PDF
-                                    </a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[480px] text-sm">
+                            <thead>
+                                <tr class="border-b text-left text-muted-foreground">
+                                    <th class="py-2">Nomor</th>
+                                    <th>Nama</th>
+                                    <th>Peran</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="certificate in certificates.data"
+                                    :key="certificate.id"
+                                    class="border-b transition-colors last:border-0 hover:bg-muted/40"
+                                >
+                                    <td class="py-2 font-mono">{{ certificate.certificate_number }}</td>
+                                    <td>{{ certificate.user.name }}</td>
+                                    <td>
+                                        <Badge variant="success">{{ certificateRoleLabels[certificate.role] ?? certificate.role }}</Badge>
+                                    </td>
+                                    <td>
+                                        <a
+                                            v-if="certificate.file_path"
+                                            :href="`/storage/${certificate.file_path}`"
+                                            target="_blank"
+                                            class="text-primary underline"
+                                        >
+                                            PDF
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

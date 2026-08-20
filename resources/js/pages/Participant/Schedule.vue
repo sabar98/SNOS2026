@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +8,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { registrationStatusLabels, registrationStatusVariants, slotStatusLabels, slotStatusVariants } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
+import { CalendarClock, Video } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 interface Slot {
     id: number;
@@ -43,11 +47,12 @@ interface Session {
     moderator: { name: string } | null;
 }
 
-defineProps<{
+const props = defineProps<{
     slots: Slot[];
     tickets: Ticket[];
     sessions: Session[];
     attendedSessionIds: number[];
+    attendanceMethod: string | null;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Jadwal Saya', href: '/participant/schedule' }];
@@ -67,6 +72,8 @@ const attendanceForm = useForm({});
 function markAttendance(sessionId: number) {
     attendanceForm.post(route('participant.sessions.attendance', sessionId), { preserveScroll: true });
 }
+
+const nextZoomSession = computed(() => props.sessions.find((session) => session.zoom_link) ?? null);
 </script>
 
 <template>
@@ -74,28 +81,60 @@ function markAttendance(sessionId: number) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4">
+            <PageHeader :icon="CalendarClock" title="Jadwal Saya" description="Tiket digital, agenda, dan jadwal presentasi Anda." />
+
+            <Card v-if="attendanceMethod === 'daring'" class="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                        <Video class="size-4" /> Anda Terdaftar Daring
+                    </CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-3 text-sm">
+                    <p class="text-emerald-800/80 dark:text-emerald-300/80">
+                        Ikuti kegiatan dari mana saja lewat Zoom. Buka link Zoom sesi Anda di bawah, lalu isi absensi daring setelah sesi dimulai.
+                    </p>
+                    <a
+                        v-if="nextZoomSession"
+                        :href="nextZoomSession.zoom_link ?? '#'"
+                        target="_blank"
+                        class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700"
+                    >
+                        <Video class="size-4" /> Buka Zoom &mdash; Sesi {{ nextZoomSession.session_number }}
+                    </a>
+                    <p v-else class="text-emerald-800/80 dark:text-emerald-300/80">Link Zoom akan muncul di sini setelah jadwal sesi ditetapkan.</p>
+                </CardContent>
+            </Card>
+
             <Card v-for="ticket in tickets" :key="ticket.registration_number" class="border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40">
                 <CardHeader class="flex flex-row items-center justify-between space-y-0">
-                    <CardTitle class="text-sky-800 dark:text-sky-300">Tiket Digital</CardTitle>
+                    <CardTitle class="text-sky-800 dark:text-sky-300">{{
+                        attendanceMethod === 'daring' ? 'Nomor Registrasi' : 'Tiket Digital'
+                    }}</CardTitle>
                     <Badge :variant="registrationStatusVariants[ticket.status] ?? 'secondary'">
                         {{ registrationStatusLabels[ticket.status] ?? ticket.status }}
                     </Badge>
                 </CardHeader>
                 <CardContent class="flex flex-col items-center gap-3">
-                    <div class="w-40 rounded-lg bg-white p-3 shadow-sm" v-html="ticket.qr_svg" />
+                    <div v-if="attendanceMethod !== 'daring'" class="w-40 rounded-lg bg-white p-3 shadow-sm" v-html="ticket.qr_svg" />
                     <p class="font-mono text-sm">{{ ticket.registration_number }}</p>
                     <p class="text-center text-xs text-muted-foreground">
-                        Tunjukkan kode ini kepada panitia untuk registrasi ulang di lokasi kegiatan.
+                        {{
+                            attendanceMethod === 'daring'
+                                ? 'Gunakan nomor ini untuk konfirmasi kehadiran daring di bawah.'
+                                : 'Tunjukkan kode ini kepada panitia untuk registrasi ulang di lokasi kegiatan.'
+                        }}
                     </p>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle class="text-base">Registrasi Ulang / Check-in</CardTitle>
+                    <CardTitle class="text-base">
+                        {{ attendanceMethod === 'daring' ? 'Konfirmasi Kehadiran Daring' : 'Registrasi Ulang / Check-in' }}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form class="flex gap-2" @submit.prevent="checkIn">
+                    <form class="flex flex-wrap gap-2" @submit.prevent="checkIn">
                         <input
                             v-model="checkInForm.registration_number"
                             type="text"
@@ -121,21 +160,34 @@ function markAttendance(sessionId: number) {
                                 <span v-if="session.moderator">&middot; Moderator: {{ session.moderator.name }}</span>
                             </p>
                         </div>
-                        <Badge v-if="attendedSessionIds.includes(session.id)" variant="success">Hadir</Badge>
-                        <Button v-else size="sm" variant="outline" :disabled="attendanceForm.processing" @click="markAttendance(session.id)">
-                            Tandai Hadir
-                        </Button>
+                        <div class="flex items-center gap-2">
+                            <a
+                                v-if="attendanceMethod === 'daring' && session.zoom_link"
+                                :href="session.zoom_link"
+                                target="_blank"
+                                class="inline-flex items-center gap-1 rounded-md border border-emerald-300 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+                            >
+                                <Video class="size-3.5" /> Buka Zoom
+                            </a>
+                            <Badge v-if="attendedSessionIds.includes(session.id)" variant="success">Hadir</Badge>
+                            <Button v-else size="sm" variant="outline" :disabled="attendanceForm.processing" @click="markAttendance(session.id)">
+                                Tandai Hadir
+                            </Button>
+                        </div>
                     </div>
                     <p v-if="sessions.length === 0" class="text-muted-foreground">Agenda sesi belum ditetapkan panitia.</p>
                 </CardContent>
             </Card>
 
-            <div v-if="slots.length === 0" class="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                Jadwal presentasi belum ditetapkan panitia.
-            </div>
+            <EmptyState
+                v-if="slots.length === 0"
+                :icon="CalendarClock"
+                title="Belum ada jadwal presentasi"
+                description="Jadwal presentasi Anda akan tampil di sini setelah ditetapkan panitia."
+            />
 
-            <Card v-for="slot in slots" :key="slot.id">
-                <CardHeader class="flex flex-row items-center justify-between space-y-0">
+            <Card v-for="slot in slots" :key="slot.id" class="transition-shadow duration-200 hover:shadow-md">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
                     <CardTitle class="text-base">{{ slot.article.title }}</CardTitle>
                     <Badge :variant="slotStatusVariants[slot.status] ?? 'secondary'">
                         {{ slotStatusLabels[slot.status] ?? slot.status }}

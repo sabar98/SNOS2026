@@ -37,6 +37,48 @@ test('an admin can assign a reviewer to an article', function () {
     expect($article->status)->toBe('sedang_direview');
 });
 
+test('an admin can update a reviewer assignment', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $firstReviewer = User::factory()->create();
+    $firstReviewer->assignRole('reviewer');
+    $secondReviewer = User::factory()->create();
+    $secondReviewer->assignRole('reviewer');
+    $article = makeReviewableArticle();
+    $assignment = ArticleReviewer::create([
+        'article_id' => $article->id,
+        'reviewer_id' => $firstReviewer->id,
+        'status' => 'ditugaskan',
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/reviewer-assignments/{$assignment->id}", [
+        'reviewer_id' => $secondReviewer->id,
+        'due_date' => '2026-12-31',
+    ]);
+
+    $response->assertRedirect();
+    $assignment->refresh();
+    expect($assignment->reviewer_id)->toBe($secondReviewer->id);
+    expect($assignment->due_date->toDateString())->toBe('2026-12-31');
+});
+
+test('a non-admin cannot update a reviewer assignment', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $reviewer = User::factory()->create();
+    $reviewer->assignRole('reviewer');
+    $article = makeReviewableArticle();
+    $assignment = ArticleReviewer::create([
+        'article_id' => $article->id,
+        'reviewer_id' => $reviewer->id,
+        'status' => 'ditugaskan',
+    ]);
+
+    $this->actingAs($participant)->put("/admin/reviewer-assignments/{$assignment->id}", [
+        'reviewer_id' => $reviewer->id,
+    ])->assertForbidden();
+});
+
 test('a reviewer can accept an article outright', function () {
     $article = makeReviewableArticle();
     $reviewer = User::factory()->create();

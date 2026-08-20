@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -17,6 +18,7 @@ import {
 } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import { UserRound } from 'lucide-vue-next';
 
 interface Registration {
     id: number;
@@ -44,8 +46,10 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Detail Peserta', href: '#' }];
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
+            <PageHeader :icon="UserRound" title="Detail Peserta" description="Riwayat pendaftaran, pembayaran, artikel, dan sertifikat peserta." />
+
             <Card class="border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40">
-                <CardHeader class="flex flex-row items-center justify-between space-y-0">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
                     <CardTitle class="text-sky-800 dark:text-sky-300">{{ registration.user.name }}</CardTitle>
                     <Badge :variant="registrationStatusVariants[registration.status] ?? 'secondary'">
                         {{ registrationStatusLabels[registration.status] ?? registration.status }}
@@ -68,7 +72,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Detail Peserta', href: '#' }];
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
                 <CardHeader><CardTitle class="text-base">Pembayaran</CardTitle></CardHeader>
                 <CardContent class="space-y-2 text-sm">
                     <div v-for="payment in registration.payments" :key="payment.id" class="flex items-center justify-between">
@@ -85,7 +89,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Detail Peserta', href: '#' }];
                 </CardContent>
             </Card>
 
-            <Card v-if="registration.articles.length">
+            <Card v-if="registration.articles.length" class="border-violet-100 bg-violet-50 dark:border-border dark:bg-violet-950/40">
                 <CardHeader><CardTitle class="text-base">Artikel</CardTitle></CardHeader>
                 <CardContent class="space-y-2 text-sm">
                     <div v-for="article in registration.articles" :key="article.id" class="flex items-center justify-between">
@@ -99,7 +103,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Detail Peserta', href: '#' }];
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card class="border-teal-100 bg-teal-50 dark:border-border dark:bg-teal-950/40">
                 <CardHeader><CardTitle class="text-base">Kehadiran &amp; Evaluasi</CardTitle></CardHeader>
                 <CardContent class="space-y-2 text-sm">
                     <div v-for="attendance in registration.attendances" :key="attendance.id" class="flex items-center justify-between">
