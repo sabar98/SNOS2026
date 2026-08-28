@@ -44,6 +44,15 @@ class EventRegistration extends Model
     }
 
     /**
+     * Once the registration fee payment is verified, participant_type can no longer
+     * change (it would invalidate the amount already paid and verified).
+     */
+    public function isFeeLocked(): bool
+    {
+        return $this->payments()->where('type', 'registrasi')->where('status', 'terverifikasi')->exists();
+    }
+
+    /**
      * Mirrors the checklist in snos.md §19: paid, present, evaluated, and
      * (for presenters) an accepted article — all four unlock the certificate.
      */

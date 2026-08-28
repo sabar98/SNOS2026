@@ -14,12 +14,16 @@ import {
     Instagram,
     Mail,
     MapPin,
+    Menu,
     Newspaper,
     Phone,
     Quote,
     Wallet,
+    X,
 } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref, type Ref } from 'vue';
+
+const mobileMenuOpen = ref(false);
 
 interface Speaker {
     name: string;
@@ -153,9 +157,10 @@ onUnmounted(() => {
                     >
                         S
                     </span>
-                    SNOS 2026
+                    <span class="hidden sm:inline">SNOS 2026</span>
                 </span>
-                <nav class="flex items-center gap-3">
+
+                <nav class="hidden items-center gap-3 sm:flex">
                     <Link v-if="$page.props.auth.user" :href="route('dashboard')">
                         <Button size="sm">Dashboard</Button>
                     </Link>
@@ -165,6 +170,33 @@ onUnmounted(() => {
                         </Link>
                         <Link :href="route('register')">
                             <Button size="sm">Daftar Sekarang</Button>
+                        </Link>
+                    </template>
+                </nav>
+
+                <button
+                    type="button"
+                    class="inline-flex size-9 items-center justify-center rounded-md border text-foreground transition-colors hover:bg-muted sm:hidden"
+                    :aria-expanded="mobileMenuOpen"
+                    aria-label="Buka menu navigasi"
+                    @click="mobileMenuOpen = !mobileMenuOpen"
+                >
+                    <X v-if="mobileMenuOpen" class="size-5" />
+                    <Menu v-else class="size-5" />
+                </button>
+            </div>
+
+            <div v-if="mobileMenuOpen" class="border-t bg-background px-6 py-4 sm:hidden">
+                <nav class="flex flex-col gap-2">
+                    <Link v-if="$page.props.auth.user" :href="route('dashboard')" @click="mobileMenuOpen = false">
+                        <Button size="sm" class="w-full">Dashboard</Button>
+                    </Link>
+                    <template v-else>
+                        <Link :href="route('login')" @click="mobileMenuOpen = false">
+                            <Button variant="ghost" size="sm" class="w-full">Masuk</Button>
+                        </Link>
+                        <Link :href="route('register')" @click="mobileMenuOpen = false">
+                            <Button size="sm" class="w-full">Daftar Sekarang</Button>
                         </Link>
                     </template>
                 </nav>

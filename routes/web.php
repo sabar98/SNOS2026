@@ -56,6 +56,8 @@ Route::middleware('auth')->group(function () {
         Route::get('registrations/create', [EventRegistrationController::class, 'create'])->name('registrations.create');
         Route::post('registrations', [EventRegistrationController::class, 'store'])->name('registrations.store');
         Route::get('registrations/{registration}', [EventRegistrationController::class, 'show'])->name('registrations.show');
+        Route::get('registrations/{registration}/edit', [EventRegistrationController::class, 'edit'])->name('registrations.edit');
+        Route::put('registrations/{registration}', [EventRegistrationController::class, 'update'])->name('registrations.update');
 
         Route::post('payments/{payment}/proof', [ParticipantPaymentController::class, 'uploadProof'])->name('payments.upload');
 

@@ -15,7 +15,7 @@ import {
 } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ClipboardList } from 'lucide-vue-next';
+import { ClipboardList, MessageSquareHeart, Pencil } from 'lucide-vue-next';
 
 interface Payment {
     id: number;
@@ -39,6 +39,10 @@ interface Registration {
     registration_number: string;
     participant_type: string;
     attendance_method: string;
+    article_scope: string | null;
+    institution: string;
+    special_needs: string | null;
+    join_gala_dinner: boolean;
     status: string;
     payments: Payment[];
     articles: Article[];
@@ -46,6 +50,7 @@ interface Registration {
 
 const props = defineProps<{
     registration: Registration;
+    feeLocked: boolean;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: props.registration.registration_number, href: '#' }];
@@ -73,7 +78,13 @@ function formatRupiah(value: string): string {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4">
-            <PageHeader :icon="ClipboardList" title="Detail Pendaftaran" description="Status pendaftaran, pembayaran, dan artikel Anda." />
+            <PageHeader :icon="ClipboardList" title="Detail Pendaftaran" description="Status pendaftaran, pembayaran, dan artikel Anda.">
+                <template #actions>
+                    <Link :href="route('participant.registrations.edit', registration.id)">
+                        <Button variant="outline" class="gap-2"><Pencil class="size-4" /> Ubah Data</Button>
+                    </Link>
+                </template>
+            </PageHeader>
 
             <Card class="border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40">
                 <CardHeader class="flex flex-row items-center justify-between space-y-0">
@@ -89,6 +100,18 @@ function formatRupiah(value: string): string {
                     </p>
                     <p>
                         Metode kehadiran: <span class="font-medium">{{ registration.attendance_method }}</span>
+                    </p>
+                    <p>
+                        Institusi: <span class="font-medium">{{ registration.institution }}</span>
+                    </p>
+                    <p v-if="registration.article_scope">
+                        Bidang / scope artikel: <span class="font-medium">{{ registration.article_scope }}</span>
+                    </p>
+                    <p v-if="registration.special_needs">
+                        Kebutuhan khusus: <span class="font-medium">{{ registration.special_needs }}</span>
+                    </p>
+                    <p v-if="registration.join_gala_dinner" class="flex items-center gap-1.5 text-sky-700 dark:text-sky-400">
+                        <MessageSquareHeart class="size-3.5" /> Ikut malam keakraban
                     </p>
                 </CardContent>
             </Card>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\StoreEventRegistrationRequest;
+use App\Http\Requests\Participant\UpdateEventRegistrationRequest;
 use App\Models\EventRegistration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -65,6 +66,47 @@ class EventRegistrationController extends Controller
 
         return Inertia::render('Participant/RegistrationShow', [
             'registration' => $registration,
+            'feeLocked' => $registration->isFeeLocked(),
         ]);
+    }
+
+    public function edit(EventRegistration $registration): Response
+    {
+        $this->authorize('update', $registration);
+
+        return Inertia::render('Participant/RegistrationEdit', [
+            'registration' => $registration,
+            'seminar' => config('seminar'),
+            'feeLocked' => $registration->isFeeLocked(),
+        ]);
+    }
+
+    public function update(UpdateEventRegistrationRequest $request, EventRegistration $registration): RedirectResponse
+    {
+        $this->authorize('update', $registration);
+
+        $validated = $request->validated();
+
+        $data = [
+            'attendance_method' => $validated['attendance_method'],
+            'article_scope' => $validated['article_scope'] ?? null,
+            'institution' => $validated['institution'],
+            'special_needs' => $validated['special_needs'] ?? null,
+            'join_gala_dinner' => $validated['join_gala_dinner'] ?? false,
+        ];
+
+        if (! $registration->isFeeLocked()) {
+            $data['participant_type'] = $validated['participant_type'];
+
+            $registrationPayment = $registration->payments()->where('type', 'registrasi')->first();
+            if ($registrationPayment && $registrationPayment->status !== 'terverifikasi') {
+                $registrationPayment->update(['amount' => config("seminar.fees.{$validated['participant_type']}", 0)]);
+            }
+        }
+
+        $registration->update($data);
+
+        return redirect()->route('participant.registrations.show', $registration)
+            ->with('status', 'registration-updated');
     }
 }
