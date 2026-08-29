@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JournalController as AdminJournalController;
 use App\Http\Controllers\Admin\LandingSettingController;
+use App\Http\Controllers\Admin\LoaSettingController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\NarasumberController as AdminNarasumberController;
 use App\Http\Controllers\Admin\ParticipantCategoryController;
@@ -169,6 +170,10 @@ Route::middleware('auth')->group(function () {
 
         Route::post('certificate-templates', [CertificateTemplateController::class, 'store'])->name('certificate-templates.store');
         Route::delete('certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'destroy'])->name('certificate-templates.destroy');
+
+        Route::get('loa-settings', [LoaSettingController::class, 'edit'])->name('loa-settings.edit');
+        Route::post('loa-settings', [LoaSettingController::class, 'update'])->name('loa-settings.update');
+        Route::delete('loa-settings', [LoaSettingController::class, 'destroy'])->name('loa-settings.destroy');
 
         Route::get('announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
         Route::post('announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');

@@ -78,6 +78,12 @@
             font-size: 22px;
             color: #2a78d6;
         }
+        .signature-image {
+            height: 70px;
+            max-width: 220px;
+            object-fit: contain;
+            margin: 0 auto;
+        }
         .signature-line {
             border-bottom: 1px solid #1b1b18;
             margin: 4px 0 6px;
@@ -144,7 +150,11 @@
     </p>
 
     <div class="signature-block">
-        <div class="signature-mark">{{ $signerName }}</div>
+        @if($signatureBase64)
+            <img class="signature-image" src="data:{{ $signatureMime }};base64,{{ $signatureBase64 }}" alt="Tanda tangan">
+        @else
+            <div class="signature-mark">{{ $signerName }}</div>
+        @endif
         <div class="signature-line"></div>
         <div class="signature-name">{{ $signerName }}</div>
         <div class="signature-title">{{ $signerTitle }}</div>
