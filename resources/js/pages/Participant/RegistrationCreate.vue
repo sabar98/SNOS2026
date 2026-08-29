@@ -9,15 +9,23 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { participantTypeLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ClipboardCheck, ClipboardPlus, MessageSquareHeart, Sparkles, Wallet } from 'lucide-vue-next';
+import { ClipboardCheck, ClipboardPlus, Landmark, MessageSquareHeart, Sparkles, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Seminar {
     fees: Record<string, number>;
 }
 
+interface BankAccount {
+    id: number;
+    bank_name: string;
+    account_number: string;
+    account_holder: string;
+}
+
 const props = defineProps<{
     seminar: Seminar;
+    bankAccounts: BankAccount[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Daftar Kegiatan', href: '/participant/registrations/create' }];
@@ -29,6 +37,7 @@ const form = useForm({
     institution: '',
     special_needs: '',
     join_gala_dinner: false,
+    bank_account_id: null as number | null,
     terms_accepted: false,
 });
 
@@ -91,6 +100,31 @@ function submit() {
                             <Wallet class="size-4" /> Biaya {{ participantTypeLabels[form.participant_type] }}
                         </div>
                         <span class="text-lg font-bold text-emerald-800 dark:text-emerald-300">{{ formatRupiah(selectedFee) }}</span>
+                    </div>
+
+                    <div v-if="form.participant_type" class="grid gap-2">
+                        <p class="text-sm font-medium leading-none">Rekening Tujuan Pembayaran</p>
+                        <div v-if="bankAccounts.length" class="grid gap-2 sm:grid-cols-2">
+                            <label
+                                v-for="bank in bankAccounts"
+                                :key="bank.id"
+                                class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40"
+                                :class="form.bank_account_id === bank.id ? 'border-primary ring-1 ring-primary' : ''"
+                            >
+                                <input v-model="form.bank_account_id" type="radio" :value="bank.id" class="mt-0.5 h-4 w-4" required />
+                                <span class="flex flex-col gap-0.5">
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <Landmark class="size-3.5 text-muted-foreground" /> {{ bank.bank_name }}
+                                    </span>
+                                    <span class="font-mono text-xs text-muted-foreground">{{ bank.account_number }}</span>
+                                    <span class="text-xs text-muted-foreground">a.n. {{ bank.account_holder }}</span>
+                                </span>
+                            </label>
+                        </div>
+                        <p v-else class="text-sm text-muted-foreground">
+                            Belum ada rekening tujuan pembayaran yang tersedia. Silakan hubungi panitia.
+                        </p>
+                        <InputError :message="form.errors.bank_account_id" />
                     </div>
                 </CardContent>
             </Card>

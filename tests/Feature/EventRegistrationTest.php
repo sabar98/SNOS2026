@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BankAccount;
 use App\Models\EventRegistration;
 use App\Models\User;
 
@@ -11,13 +12,25 @@ function participant(): User
     return $user;
 }
 
+function activeBankAccount(): BankAccount
+{
+    return BankAccount::create([
+        'bank_name' => 'BCA',
+        'account_number' => '1234567890',
+        'account_holder' => 'Panitia SNOS 2026',
+        'is_active' => true,
+    ]);
+}
+
 test('a participant can register for the event and a registration fee payment is created', function () {
     $user = participant();
+    $bank = activeBankAccount();
 
     $response = $this->actingAs($user)->post('/participant/registrations', [
         'participant_type' => 'presenter_luring',
         'attendance_method' => 'luring',
         'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
         'terms_accepted' => true,
     ]);
 
@@ -28,18 +41,35 @@ test('a participant can register for the event and a registration fee payment is
     expect($registration->status)->toBe('menunggu_pembayaran');
     expect($registration->payments)->toHaveCount(1);
     expect((float) $registration->payments->first()->amount)->toBe(750000.0);
+    expect($registration->payments->first()->bank_account_id)->toBe($bank->id);
+    expect($registration->payments->first()->bank_account)->toContain('BCA', '1234567890', 'Panitia SNOS 2026');
 });
 
 test('registration requires accepting the terms', function () {
+    $user = participant();
+    $bank = activeBankAccount();
+
+    $response = $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'peserta_umum',
+        'attendance_method' => 'luring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+    ]);
+
+    $response->assertSessionHasErrors('terms_accepted');
+});
+
+test('registration requires a valid bank account', function () {
     $user = participant();
 
     $response = $this->actingAs($user)->post('/participant/registrations', [
         'participant_type' => 'peserta_umum',
         'attendance_method' => 'luring',
         'institution' => 'Universitas Contoh',
+        'terms_accepted' => true,
     ]);
 
-    $response->assertSessionHasErrors('terms_accepted');
+    $response->assertSessionHasErrors('bank_account_id');
 });
 
 test('a participant cannot view another participant\'s registration', function () {

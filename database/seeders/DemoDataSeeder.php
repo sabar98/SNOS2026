@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\BankAccount;
 use App\Models\EventRegistration;
 use App\Models\Journal;
 use App\Models\User;
@@ -124,6 +125,12 @@ class DemoDataSeeder extends Seeder
             'status' => 'diterima',
         ]);
         $eligibleRegistration->markCompletedIfEligible();
+
+        collect([
+            ['bank_name' => 'BCA', 'account_number' => '1234567890', 'account_holder' => 'Panitia SNOS 2026'],
+            ['bank_name' => 'BNI', 'account_number' => '0987654321', 'account_holder' => 'Panitia SNOS 2026'],
+            ['bank_name' => 'Mandiri', 'account_number' => '1122334455', 'account_holder' => 'Panitia SNOS 2026'],
+        ])->each(fn (array $bank) => BankAccount::create($bank + ['is_active' => true]));
 
         $journals = collect([
             ['name' => 'Jurnal Ilmiah Teknologi Terapan', 'type' => 'jurnal', 'publisher' => 'Universitas Contoh Press'],

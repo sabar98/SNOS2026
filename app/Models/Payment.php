@@ -19,6 +19,7 @@ class Payment extends Model
         'type',
         'amount',
         'bank_account',
+        'bank_account_id',
         'payment_code',
         'due_at',
         'proof_file_path',
@@ -40,6 +41,11 @@ class Payment extends Model
     public function payable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 
     public function verifier(): BelongsTo

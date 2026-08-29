@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Participant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\StoreEventRegistrationRequest;
 use App\Http\Requests\Participant\UpdateEventRegistrationRequest;
+use App\Models\BankAccount;
 use App\Models\EventRegistration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,7 @@ class EventRegistrationController extends Controller
     {
         return Inertia::render('Participant/RegistrationCreate', [
             'seminar' => config('seminar'),
+            'bankAccounts' => BankAccount::where('is_active', true)->orderBy('bank_name')->get(),
         ]);
     }
 
@@ -26,8 +28,9 @@ class EventRegistrationController extends Controller
     {
         $user = Auth::user();
         $validated = $request->validated();
+        $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
 
-        $registration = DB::transaction(function () use ($user, $validated) {
+        $registration = DB::transaction(function () use ($user, $validated, $bankAccount) {
             $registration = EventRegistration::create([
                 'registration_number' => 'SNOS2026-'.Str::upper(Str::random(8)),
                 'user_id' => $user->id,
@@ -45,7 +48,8 @@ class EventRegistrationController extends Controller
             $registration->payments()->create([
                 'type' => 'registrasi',
                 'amount' => config("seminar.fees.{$registration->participant_type}", 0),
-                'bank_account' => '1234567890 a.n. Panitia SNOS 2026 (Bank Contoh)',
+                'bank_account' => "{$bankAccount->bank_name} {$bankAccount->account_number} a.n. {$bankAccount->account_holder}",
+                'bank_account_id' => $bankAccount->id,
                 'payment_code' => 'PAY-'.Str::upper(Str::random(10)),
                 'due_at' => $registration->payment_due_at,
                 'status' => 'belum_bayar',

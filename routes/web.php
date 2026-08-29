@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CertificateTemplateController;
 use App\Http\Controllers\Admin\CheckInController;
@@ -89,6 +90,11 @@ Route::middleware('auth')->group(function () {
         Route::post('journals', [AdminJournalController::class, 'store'])->name('journals.store');
         Route::put('journals/{journal}', [AdminJournalController::class, 'update'])->name('journals.update');
         Route::delete('journals/{journal}', [AdminJournalController::class, 'destroy'])->name('journals.destroy');
+
+        Route::get('bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts.index');
+        Route::post('bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
+        Route::put('bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+        Route::delete('bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
         Route::get('articles', [AdminArticleController::class, 'index'])->name('articles.index');
         Route::get('articles/{article}', [AdminArticleController::class, 'show'])->name('articles.show');
