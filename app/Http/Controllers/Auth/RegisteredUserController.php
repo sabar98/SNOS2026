@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -54,7 +55,16 @@ class RegisteredUserController extends Controller
         $user->assignRole('peserta');
 
         // Sent per explicit product decision, despite the plaintext-password risk this carries.
-        Mail::to($user->email)->send(new WelcomeAccountMail($user, $request->password));
+        // Wrapped: a mail-server hiccup must never turn a successful registration into a 500.
+        try {
+            Mail::to($user->email)->send(new WelcomeAccountMail($user, $request->password));
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send welcome account email.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         Auth::login($user);
 
