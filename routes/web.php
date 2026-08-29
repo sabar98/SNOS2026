@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\PimpinanController as AdminPimpinanController;
 use App\Http\Controllers\Admin\PresentationSlotController;
 use App\Http\Controllers\Admin\PublicationController;
+use App\Http\Controllers\Admin\RegistrationFeeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewerAssignmentController;
 use App\Http\Controllers\Admin\ReviewerController as AdminReviewerController;
@@ -95,6 +96,11 @@ Route::middleware('auth')->group(function () {
         Route::post('bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
         Route::put('bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
         Route::delete('bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+
+        Route::get('registration-fees', [RegistrationFeeController::class, 'index'])->name('registration-fees.index');
+        Route::post('registration-fees', [RegistrationFeeController::class, 'store'])->name('registration-fees.store');
+        Route::put('registration-fees/{registrationFee}', [RegistrationFeeController::class, 'update'])->name('registration-fees.update');
+        Route::delete('registration-fees/{registrationFee}', [RegistrationFeeController::class, 'destroy'])->name('registration-fees.destroy');
 
         Route::get('articles', [AdminArticleController::class, 'index'])->name('articles.index');
         Route::get('articles/{article}', [AdminArticleController::class, 'show'])->name('articles.show');

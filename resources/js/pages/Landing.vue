@@ -21,7 +21,7 @@ import {
     Wallet,
     X,
 } from 'lucide-vue-next';
-import { onMounted, onUnmounted, ref, type Ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, type Ref } from 'vue';
 
 const mobileMenuOpen = ref(false);
 
@@ -72,16 +72,22 @@ interface Seminar {
     scope: string[];
     speakers: Speaker[];
     timeline: TimelineItem[];
-    fees: Record<string, number>;
     organizer: string;
     contact: Contact;
     leader_message: LeaderMessage;
     partners: Partner[];
 }
 
-defineProps<{
+interface RegistrationFeeRow {
+    participant_type: string;
+    attendance_method: string;
+    amount: number;
+}
+
+const props = defineProps<{
     seminar: Seminar;
     journals: Journal[];
+    registrationFees: RegistrationFeeRow[];
 }>();
 
 const feeLabels: Record<string, string> = {
@@ -91,9 +97,33 @@ const feeLabels: Record<string, string> = {
     peserta_mahasiswa: 'Peserta Mahasiswa',
 };
 
+const attendanceMethodLabels: Record<string, string> = {
+    luring: 'Luring',
+    daring: 'Daring',
+};
+
 function formatRupiah(value: number): string {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 }
+
+const groupedFees = computed(() => {
+    const order = Object.keys(feeLabels);
+    const types: string[] = [...new Set(props.registrationFees.map((fee: RegistrationFeeRow) => fee.participant_type))].sort(
+        (a, b) => order.indexOf(a) - order.indexOf(b),
+    );
+
+    return types.map((type: string) => ({
+        participant_type: type,
+        label: feeLabels[type] ?? type,
+        amounts: props.registrationFees
+            .filter((fee: RegistrationFeeRow) => fee.participant_type === type)
+            .map((fee: RegistrationFeeRow) => ({
+                method: fee.attendance_method,
+                label: attendanceMethodLabels[fee.attendance_method] ?? fee.attendance_method,
+                amount: fee.amount,
+            })),
+    }));
+});
 
 const { getInitials } = useInitials();
 
@@ -392,15 +422,21 @@ onUnmounted(() => {
                         <CardTitle class="text-base">Biaya Pendaftaran</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <ul class="space-y-1 text-sm">
+                        <ul class="space-y-2 text-sm">
                             <li
-                                v-for="(fee, key) in seminar.fees"
-                                :key="key"
-                                class="flex items-center justify-between border-b border-dashed py-1.5 last:border-b-0"
+                                v-for="group in groupedFees"
+                                :key="group.participant_type"
+                                class="border-b border-dashed pb-2 last:border-b-0 last:pb-0"
                             >
-                                <span class="text-muted-foreground">{{ feeLabels[key] ?? key }}</span>
-                                <span class="font-semibold text-emerald-700 dark:text-emerald-400">{{ formatRupiah(fee) }}</span>
+                                <p class="mb-1 text-muted-foreground">{{ group.label }}</p>
+                                <div class="flex flex-wrap gap-x-4 gap-y-1">
+                                    <span v-for="item in group.amounts" :key="item.method" class="flex items-center gap-1.5">
+                                        <span class="text-xs text-muted-foreground">{{ item.label }}:</span>
+                                        <span class="font-semibold text-emerald-700 dark:text-emerald-400">{{ formatRupiah(item.amount) }}</span>
+                                    </span>
+                                </div>
                             </li>
+                            <li v-if="groupedFees.length === 0" class="text-muted-foreground">Informasi biaya belum tersedia.</li>
                         </ul>
                     </CardContent>
                 </Card>

@@ -7,6 +7,7 @@ use App\Http\Requests\Participant\StoreEventRegistrationRequest;
 use App\Http\Requests\Participant\UpdateEventRegistrationRequest;
 use App\Models\BankAccount;
 use App\Models\EventRegistration;
+use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +20,8 @@ class EventRegistrationController extends Controller
     public function create(): Response
     {
         return Inertia::render('Participant/RegistrationCreate', [
-            'seminar' => config('seminar'),
             'bankAccounts' => BankAccount::where('is_active', true)->orderBy('bank_name')->get(),
+            'registrationFees' => RegistrationFee::all(['participant_type', 'attendance_method', 'amount']),
         ]);
     }
 
@@ -47,7 +48,7 @@ class EventRegistrationController extends Controller
 
             $registration->payments()->create([
                 'type' => 'registrasi',
-                'amount' => config("seminar.fees.{$registration->participant_type}", 0),
+                'amount' => RegistrationFee::amountFor($registration->participant_type, $registration->attendance_method),
                 'bank_account' => "{$bankAccount->bank_name} {$bankAccount->account_number} a.n. {$bankAccount->account_holder}",
                 'bank_account_id' => $bankAccount->id,
                 'payment_code' => 'PAY-'.Str::upper(Str::random(10)),
@@ -80,7 +81,7 @@ class EventRegistrationController extends Controller
 
         return Inertia::render('Participant/RegistrationEdit', [
             'registration' => $registration,
-            'seminar' => config('seminar'),
+            'registrationFees' => RegistrationFee::all(['participant_type', 'attendance_method', 'amount']),
             'feeLocked' => $registration->isFeeLocked(),
         ]);
     }
@@ -104,7 +105,9 @@ class EventRegistrationController extends Controller
 
             $registrationPayment = $registration->payments()->where('type', 'registrasi')->first();
             if ($registrationPayment && $registrationPayment->status !== 'terverifikasi') {
-                $registrationPayment->update(['amount' => config("seminar.fees.{$validated['participant_type']}", 0)]);
+                $registrationPayment->update([
+                    'amount' => RegistrationFee::amountFor($validated['participant_type'], $validated['attendance_method']),
+                ]);
             }
         }
 

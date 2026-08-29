@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { participantTypeLabels } from '@/lib/labels';
+import { attendanceMethodLabels, participantTypeLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, Lock, MessageSquareHeart, Save, Sparkles, Wallet } from 'lucide-vue-next';
@@ -23,13 +23,15 @@ interface Registration {
     join_gala_dinner: boolean;
 }
 
-interface Seminar {
-    fees: Record<string, number>;
+interface RegistrationFeeRow {
+    participant_type: string;
+    attendance_method: string;
+    amount: number;
 }
 
 const props = defineProps<{
     registration: Registration;
-    seminar: Seminar;
+    registrationFees: RegistrationFeeRow[];
     feeLocked: boolean;
 }>();
 
@@ -50,7 +52,13 @@ const form = useForm({
 const selectClass =
     'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
-const selectedFee = computed(() => (form.participant_type ? props.seminar.fees[form.participant_type] : null));
+const selectedFee = computed(() => {
+    if (!form.participant_type || !form.attendance_method) return null;
+    const match = props.registrationFees.find(
+        (fee: RegistrationFeeRow) => fee.participant_type === form.participant_type && fee.attendance_method === form.attendance_method,
+    );
+    return match ? match.amount : null;
+});
 const isPresenter = computed(() => form.participant_type.startsWith('presenter_'));
 
 function formatRupiah(amount: number): string {
@@ -116,7 +124,8 @@ function submit() {
                         class="flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/40"
                     >
                         <div class="flex items-center gap-2 text-sm text-emerald-800/80 dark:text-emerald-300/80">
-                            <Wallet class="size-4" /> Biaya {{ participantTypeLabels[form.participant_type] }}
+                            <Wallet class="size-4" /> Biaya {{ participantTypeLabels[form.participant_type] }} &middot;
+                            {{ attendanceMethodLabels[form.attendance_method] }}
                         </div>
                         <span class="text-lg font-bold text-emerald-800 dark:text-emerald-300">{{ formatRupiah(selectedFee) }}</span>
                     </div>

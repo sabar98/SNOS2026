@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Journal;
 use App\Models\LandingSetting;
+use App\Models\RegistrationFee;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,12 +23,12 @@ class LandingController extends Controller
                 'scope' => $setting->scope,
                 'speakers' => $setting->speakers,
                 'timeline' => $setting->timeline,
-                'fees' => config('seminar.fees'),
                 'organizer' => config('seminar.organizer'),
                 'contact' => config('seminar.contact'),
                 'leader_message' => $setting->leader_message,
                 'partners' => $setting->partners,
             ],
+            'registrationFees' => RegistrationFee::orderBy('participant_type')->orderBy('attendance_method')->get(['participant_type', 'attendance_method', 'amount']),
             'journals' => Journal::query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }

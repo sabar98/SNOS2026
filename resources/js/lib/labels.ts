@@ -5,6 +5,11 @@ export const participantTypeLabels: Record<string, string> = {
     peserta_mahasiswa: 'Peserta Mahasiswa',
 };
 
+export const attendanceMethodLabels: Record<string, string> = {
+    luring: 'Luring',
+    daring: 'Daring',
+};
+
 export const articleStatusLabels: Record<string, string> = {
     draft: 'Draft',
     diajukan: 'Diajukan',
