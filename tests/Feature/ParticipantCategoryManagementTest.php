@@ -24,6 +24,7 @@ test('an admin can create a participant category', function () {
     $response = $this->actingAs($admin)->post('/admin/participant-categories', [
         'key' => 'peserta_alumni',
         'label' => 'Peserta Alumni',
+        'golongan' => 'dosen',
         'is_presenter' => false,
     ]);
 
@@ -32,6 +33,7 @@ test('an admin can create a participant category', function () {
     $category = ParticipantCategory::where('key', 'peserta_alumni')->first();
     expect($category)->not->toBeNull();
     expect($category->label)->toBe('Peserta Alumni');
+    expect($category->golongan)->toBe('dosen');
     expect($category->is_active)->toBeTrue();
 });
 
@@ -42,10 +44,25 @@ test('a participant category key must be unique', function () {
     $response = $this->actingAs($admin)->post('/admin/participant-categories', [
         'key' => 'peserta_umum',
         'label' => 'Duplikat',
+        'golongan' => 'umum',
         'is_presenter' => false,
     ]);
 
     $response->assertSessionHasErrors('key');
+});
+
+test('a participant category golongan must be one of the allowed options', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $response = $this->actingAs($admin)->post('/admin/participant-categories', [
+        'key' => 'peserta_alumni',
+        'label' => 'Peserta Alumni',
+        'golongan' => 'alumni',
+        'is_presenter' => false,
+    ]);
+
+    $response->assertSessionHasErrors('golongan');
 });
 
 test('an admin can update a participant category label, presenter flag, and active status, but not its key', function () {
@@ -60,6 +77,7 @@ test('an admin can update a participant category label, presenter flag, and acti
 
     $response = $this->actingAs($admin)->put("/admin/participant-categories/{$category->id}", [
         'label' => 'Alumni SNOS',
+        'golongan' => 'mahasiswa',
         'is_presenter' => true,
         'is_active' => false,
     ]);
@@ -68,6 +86,7 @@ test('an admin can update a participant category label, presenter flag, and acti
     $category->refresh();
     expect($category->key)->toBe('peserta_alumni');
     expect($category->label)->toBe('Alumni SNOS');
+    expect($category->golongan)->toBe('mahasiswa');
     expect($category->is_presenter)->toBeTrue();
     expect($category->is_active)->toBeFalse();
 });
@@ -111,11 +130,13 @@ test('a non-admin cannot manage participant categories', function () {
     $this->actingAs($participant)->post('/admin/participant-categories', [
         'key' => 'peserta_alumni',
         'label' => 'Tidak boleh',
+        'golongan' => 'umum',
         'is_presenter' => false,
     ])->assertForbidden();
 
     $this->actingAs($participant)->put("/admin/participant-categories/{$category->id}", [
         'label' => 'Tidak boleh',
+        'golongan' => 'umum',
         'is_presenter' => false,
         'is_active' => true,
     ])->assertForbidden();

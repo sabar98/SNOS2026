@@ -17,6 +17,7 @@ interface ParticipantCategoryRow {
     id: number;
     key: string;
     label: string;
+    golongan: string;
     is_presenter: boolean;
     is_active: boolean;
 }
@@ -26,6 +27,13 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Kategori Peserta', href: '/admin/participant-categories' }];
+
+const golonganOptions = [
+    { value: 'umum', label: 'Umum' },
+    { value: 'dosen', label: 'Dosen' },
+    { value: 'mahasiswa', label: 'Mahasiswa' },
+];
+const golonganLabels: Record<string, string> = Object.fromEntries(golonganOptions.map((option) => [option.value, option.label]));
 
 const totalPresenter = computed(() => props.participantCategories.filter((category) => category.is_presenter).length);
 const totalAktif = computed(() => props.participantCategories.filter((category) => category.is_active).length);
@@ -37,6 +45,7 @@ const activeCategory = ref<ParticipantCategoryRow | null>(null);
 const dialogForm = useForm({
     key: '',
     label: '',
+    golongan: 'umum',
     is_presenter: false,
     is_active: true,
 });
@@ -55,6 +64,7 @@ function openEditDialog(category: ParticipantCategoryRow) {
     dialogForm.clearErrors();
     dialogForm.key = category.key;
     dialogForm.label = category.label;
+    dialogForm.golongan = category.golongan;
     dialogForm.is_presenter = category.is_presenter;
     dialogForm.is_active = category.is_active;
     dialogOpen.value = true;
@@ -156,6 +166,7 @@ function destroy(category: ParticipantCategoryRow) {
                                     <th class="w-10 py-2">No</th>
                                     <th>Kode</th>
                                     <th>Label</th>
+                                    <th>Golongan</th>
                                     <th>Presenter</th>
                                     <th>Status</th>
                                     <th class="text-right">Aksi</th>
@@ -170,6 +181,7 @@ function destroy(category: ParticipantCategoryRow) {
                                     <td class="py-3 text-muted-foreground">{{ index + 1 }}</td>
                                     <td class="font-mono text-muted-foreground">{{ category.key }}</td>
                                     <td class="font-medium">{{ category.label }}</td>
+                                    <td>{{ golonganLabels[category.golongan] ?? category.golongan }}</td>
                                     <td>
                                         <Badge :variant="category.is_presenter ? 'info' : 'secondary'">
                                             {{ category.is_presenter ? 'Ya' : 'Tidak' }}
@@ -192,7 +204,7 @@ function destroy(category: ParticipantCategoryRow) {
                                     </td>
                                 </tr>
                                 <tr v-if="participantCategories.length === 0">
-                                    <td colspan="6" class="py-10 text-center text-muted-foreground">Belum ada kategori peserta.</td>
+                                    <td colspan="7" class="py-10 text-center text-muted-foreground">Belum ada kategori peserta.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -224,6 +236,21 @@ function destroy(category: ParticipantCategoryRow) {
                         <Label for="label">Label</Label>
                         <Input id="label" v-model="dialogForm.label" required placeholder="Peserta Alumni" />
                         <p v-if="dialogForm.errors.label" class="text-sm text-destructive">{{ dialogForm.errors.label }}</p>
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label for="golongan">Golongan</Label>
+                        <select
+                            id="golongan"
+                            v-model="dialogForm.golongan"
+                            required
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <option v-for="option in golonganOptions" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                        <p v-if="dialogForm.errors.golongan" class="text-sm text-destructive">{{ dialogForm.errors.golongan }}</p>
                     </div>
 
                     <Label for="cat_is_presenter" class="flex w-fit items-center gap-2.5 text-sm font-normal">

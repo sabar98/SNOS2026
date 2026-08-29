@@ -8,6 +8,7 @@ use App\Models\ParticipantCategory;
 use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,6 +27,7 @@ class ParticipantCategoryController extends Controller
         $validated = $request->validate([
             'key' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:participant_categories,key'],
             'label' => ['required', 'string', 'max:255'],
+            'golongan' => ['required', Rule::in(ParticipantCategory::GOLONGAN_OPTIONS)],
             'is_presenter' => ['boolean'],
         ]);
 
@@ -38,6 +40,7 @@ class ParticipantCategoryController extends Controller
     {
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:255'],
+            'golongan' => ['required', Rule::in(ParticipantCategory::GOLONGAN_OPTIONS)],
             'is_presenter' => ['boolean'],
             'is_active' => ['boolean'],
         ]);
