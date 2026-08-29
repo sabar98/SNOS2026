@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Participant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreEventRegistrationRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class StoreEventRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'participant_type' => ['required', 'in:presenter_luring,presenter_daring,peserta_umum,peserta_mahasiswa'],
+            'participant_type' => ['required', Rule::exists('participant_categories', 'key')->where('is_active', true)],
             'attendance_method' => ['required', 'in:luring,daring'],
             'article_scope' => ['nullable', 'string', 'max:255'],
             'institution' => ['required', 'string', 'max:255'],

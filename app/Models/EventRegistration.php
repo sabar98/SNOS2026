@@ -40,7 +40,7 @@ class EventRegistration extends Model
 
     public function isPresenter(): bool
     {
-        return in_array($this->participant_type, ['presenter_luring', 'presenter_daring'], true);
+        return (bool) ParticipantCategory::where('key', $this->participant_type)->value('is_presenter');
     }
 
     /**

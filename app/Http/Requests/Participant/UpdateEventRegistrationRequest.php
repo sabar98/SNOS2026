@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Participant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateEventRegistrationRequest extends FormRequest
 {
@@ -17,7 +18,10 @@ class UpdateEventRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'participant_type' => ['required', 'in:presenter_luring,presenter_daring,peserta_umum,peserta_mahasiswa'],
+            // Any existing category (active or not) is accepted here, since a
+            // registration keeps its previously chosen category even if that
+            // category is later deactivated from new selections.
+            'participant_type' => ['required', Rule::exists('participant_categories', 'key')],
             'attendance_method' => ['required', 'in:luring,daring'],
             'article_scope' => ['nullable', 'string', 'max:255'],
             'institution' => ['required', 'string', 'max:255'],

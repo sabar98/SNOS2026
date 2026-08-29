@@ -51,11 +51,10 @@ interface Registration {
 const props = defineProps<{
     registration: Registration;
     feeLocked: boolean;
+    isPresenter: boolean;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: props.registration.registration_number, href: '#' }];
-
-const isPresenter = ['presenter_luring', 'presenter_daring'].includes(props.registration.participant_type);
 
 const proofForm = useForm({
     proof: null as File | null,

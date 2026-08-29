@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\JournalController as AdminJournalController;
 use App\Http\Controllers\Admin\LandingSettingController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\NarasumberController as AdminNarasumberController;
+use App\Http\Controllers\Admin\ParticipantCategoryController;
 use App\Http\Controllers\Admin\ParticipantController as AdminParticipantController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\PimpinanController as AdminPimpinanController;
@@ -96,6 +97,11 @@ Route::middleware('auth')->group(function () {
         Route::post('bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
         Route::put('bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
         Route::delete('bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+
+        Route::get('participant-categories', [ParticipantCategoryController::class, 'index'])->name('participant-categories.index');
+        Route::post('participant-categories', [ParticipantCategoryController::class, 'store'])->name('participant-categories.store');
+        Route::put('participant-categories/{participantCategory}', [ParticipantCategoryController::class, 'update'])->name('participant-categories.update');
+        Route::delete('participant-categories/{participantCategory}', [ParticipantCategoryController::class, 'destroy'])->name('participant-categories.destroy');
 
         Route::get('registration-fees', [RegistrationFeeController::class, 'index'])->name('registration-fees.index');
         Route::post('registration-fees', [RegistrationFeeController::class, 'store'])->name('registration-fees.store');

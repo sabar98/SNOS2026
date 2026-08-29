@@ -82,6 +82,20 @@ test('a participant cannot view another participant\'s registration', function (
     $response->assertForbidden();
 });
 
+test('the registration detail page reports whether the participant type is a presenter category', function () {
+    $presenter = participant();
+    $presenterRegistration = EventRegistration::factory()->for($presenter, 'user')->create(['participant_type' => 'presenter_luring']);
+
+    $nonPresenter = participant();
+    $nonPresenterRegistration = EventRegistration::factory()->for($nonPresenter, 'user')->create(['participant_type' => 'peserta_umum']);
+
+    $this->actingAs($presenter)->get("/participant/registrations/{$presenterRegistration->id}")
+        ->assertInertia(fn ($page) => $page->where('isPresenter', true));
+
+    $this->actingAs($nonPresenter)->get("/participant/registrations/{$nonPresenterRegistration->id}")
+        ->assertInertia(fn ($page) => $page->where('isPresenter', false));
+});
+
 test('an admin can view any participant\'s registration', function () {
     $owner = participant();
     $admin = User::factory()->create();

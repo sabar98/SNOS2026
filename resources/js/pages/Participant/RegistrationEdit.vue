@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { attendanceMethodLabels, participantTypeLabels } from '@/lib/labels';
+import { attendanceMethodLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, Lock, MessageSquareHeart, Save, Sparkles, Wallet } from 'lucide-vue-next';
@@ -29,9 +29,16 @@ interface RegistrationFeeRow {
     amount: number;
 }
 
+interface ParticipantCategoryRow {
+    key: string;
+    label: string;
+    is_presenter: boolean;
+}
+
 const props = defineProps<{
     registration: Registration;
     registrationFees: RegistrationFeeRow[];
+    participantCategories: ParticipantCategoryRow[];
     feeLocked: boolean;
 }>();
 
@@ -59,7 +66,10 @@ const selectedFee = computed(() => {
     );
     return match ? match.amount : null;
 });
-const isPresenter = computed(() => form.participant_type.startsWith('presenter_'));
+const selectedCategory = computed(() =>
+    props.participantCategories.find((category: ParticipantCategoryRow) => category.key === form.participant_type),
+);
+const isPresenter = computed(() => selectedCategory.value?.is_presenter ?? false);
 
 function formatRupiah(amount: number): string {
     return `Rp${amount.toLocaleString('id-ID')}`;
@@ -99,10 +109,9 @@ function submit() {
                     <div class="grid gap-2">
                         <Label for="participant_type">Jenis Kepesertaan</Label>
                         <select id="participant_type" v-model="form.participant_type" :disabled="feeLocked" :class="selectClass">
-                            <option value="presenter_luring">Presenter Luring</option>
-                            <option value="presenter_daring">Presenter Daring</option>
-                            <option value="peserta_umum">Peserta Umum (Nonpresenter)</option>
-                            <option value="peserta_mahasiswa">Peserta Mahasiswa (Nonpresenter)</option>
+                            <option v-for="category in participantCategories" :key="category.key" :value="category.key">
+                                {{ category.label }}
+                            </option>
                         </select>
                         <p v-if="feeLocked" class="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Lock class="size-3.5" /> Tidak dapat diubah karena pembayaran registrasi sudah diverifikasi.
@@ -124,7 +133,7 @@ function submit() {
                         class="flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/40"
                     >
                         <div class="flex items-center gap-2 text-sm text-emerald-800/80 dark:text-emerald-300/80">
-                            <Wallet class="size-4" /> Biaya {{ participantTypeLabels[form.participant_type] }} &middot;
+                            <Wallet class="size-4" /> Biaya {{ selectedCategory?.label }} &middot;
                             {{ attendanceMethodLabels[form.attendance_method] }}
                         </div>
                         <span class="text-lg font-bold text-emerald-800 dark:text-emerald-300">{{ formatRupiah(selectedFee) }}</span>

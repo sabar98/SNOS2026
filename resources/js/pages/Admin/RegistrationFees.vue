@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { attendanceMethodLabels, participantTypeLabels } from '@/lib/labels';
+import { attendanceMethodLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Coins, Pencil, Plus, Trash2, TrendingUp } from 'lucide-vue-next';
@@ -19,9 +19,15 @@ interface RegistrationFeeRow {
     amount: number;
 }
 
+interface ParticipantCategoryOption {
+    key: string;
+    label: string;
+    is_active: boolean;
+}
+
 const props = defineProps<{
     registrationFees: RegistrationFeeRow[];
-    participantTypes: string[];
+    participantCategories: ParticipantCategoryOption[];
     attendanceMethods: string[];
 }>();
 
@@ -32,6 +38,10 @@ const selectClass =
 
 function formatRupiah(amount: number): string {
     return `Rp${amount.toLocaleString('id-ID')}`;
+}
+
+function categoryLabel(key: string): string {
+    return props.participantCategories.find((category: ParticipantCategoryOption) => category.key === key)?.label ?? key;
 }
 
 const highestFee = computed(() => (props.registrationFees.length ? Math.max(...props.registrationFees.map((fee) => fee.amount)) : 0));
@@ -83,7 +93,7 @@ function submitDialog() {
 }
 
 function destroy(fee: RegistrationFeeRow) {
-    const label = `${participantTypeLabels[fee.participant_type] ?? fee.participant_type} - ${attendanceMethodLabels[fee.attendance_method] ?? fee.attendance_method}`;
+    const label = `${categoryLabel(fee.participant_type)} - ${attendanceMethodLabels[fee.attendance_method] ?? fee.attendance_method}`;
     if (!confirm(`Hapus aturan biaya "${label}"?`)) {
         return;
     }
@@ -159,7 +169,7 @@ function destroy(fee: RegistrationFeeRow) {
                                     class="border-b transition-colors last:border-0 hover:bg-muted/40"
                                 >
                                     <td class="py-3 text-muted-foreground">{{ index + 1 }}</td>
-                                    <td class="font-medium">{{ participantTypeLabels[fee.participant_type] ?? fee.participant_type }}</td>
+                                    <td class="font-medium">{{ categoryLabel(fee.participant_type) }}</td>
                                     <td>{{ attendanceMethodLabels[fee.attendance_method] ?? fee.attendance_method }}</td>
                                     <td class="font-semibold text-lime-700 dark:text-lime-400">{{ formatRupiah(fee.amount) }}</td>
                                     <td class="text-right">
@@ -197,11 +207,14 @@ function destroy(fee: RegistrationFeeRow) {
                         <Label for="participant_type">Jenis Kepesertaan</Label>
                         <select id="participant_type" v-model="dialogForm.participant_type" required :class="selectClass">
                             <option value="" disabled>Pilih jenis kepesertaan</option>
-                            <option v-for="type in participantTypes" :key="type" :value="type">
-                                {{ participantTypeLabels[type] ?? type }}
+                            <option v-for="category in participantCategories" :key="category.key" :value="category.key">
+                                {{ category.label }}{{ category.is_active ? '' : ' (nonaktif)' }}
                             </option>
                         </select>
                         <p v-if="dialogForm.errors.participant_type" class="text-sm text-destructive">{{ dialogForm.errors.participant_type }}</p>
+                        <p v-if="participantCategories.length === 0" class="text-sm text-muted-foreground">
+                            Belum ada kategori peserta. Tambahkan dahulu di menu Kategori Peserta.
+                        </p>
                     </div>
 
                     <div class="grid gap-1.5">

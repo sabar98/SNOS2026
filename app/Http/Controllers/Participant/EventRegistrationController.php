@@ -7,6 +7,7 @@ use App\Http\Requests\Participant\StoreEventRegistrationRequest;
 use App\Http\Requests\Participant\UpdateEventRegistrationRequest;
 use App\Models\BankAccount;
 use App\Models\EventRegistration;
+use App\Models\ParticipantCategory;
 use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,7 @@ class EventRegistrationController extends Controller
         return Inertia::render('Participant/RegistrationCreate', [
             'bankAccounts' => BankAccount::where('is_active', true)->orderBy('bank_name')->get(),
             'registrationFees' => RegistrationFee::all(['participant_type', 'attendance_method', 'amount']),
+            'participantCategories' => ParticipantCategory::where('is_active', true)->orderBy('id')->get(['key', 'label', 'is_presenter']),
         ]);
     }
 
@@ -72,6 +74,7 @@ class EventRegistrationController extends Controller
         return Inertia::render('Participant/RegistrationShow', [
             'registration' => $registration,
             'feeLocked' => $registration->isFeeLocked(),
+            'isPresenter' => $registration->isPresenter(),
         ]);
     }
 
@@ -82,6 +85,10 @@ class EventRegistrationController extends Controller
         return Inertia::render('Participant/RegistrationEdit', [
             'registration' => $registration,
             'registrationFees' => RegistrationFee::all(['participant_type', 'attendance_method', 'amount']),
+            'participantCategories' => ParticipantCategory::where('is_active', true)
+                ->orWhere('key', $registration->participant_type)
+                ->orderBy('id')
+                ->get(['key', 'label', 'is_presenter']),
             'feeLocked' => $registration->isFeeLocked(),
         ]);
     }

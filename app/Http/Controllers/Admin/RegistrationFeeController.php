@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ParticipantCategory;
 use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,15 +13,13 @@ use Inertia\Response;
 
 class RegistrationFeeController extends Controller
 {
-    public const PARTICIPANT_TYPES = ['presenter_luring', 'presenter_daring', 'peserta_umum', 'peserta_mahasiswa'];
-
     public const ATTENDANCE_METHODS = ['luring', 'daring'];
 
     public function index(): Response
     {
         return Inertia::render('Admin/RegistrationFees', [
             'registrationFees' => RegistrationFee::orderBy('participant_type')->orderBy('attendance_method')->get(),
-            'participantTypes' => self::PARTICIPANT_TYPES,
+            'participantCategories' => ParticipantCategory::orderBy('id')->get(['key', 'label', 'is_active']),
             'attendanceMethods' => self::ATTENDANCE_METHODS,
         ]);
     }
@@ -30,7 +29,7 @@ class RegistrationFeeController extends Controller
         $validated = $request->validate([
             'participant_type' => [
                 'required',
-                Rule::in(self::PARTICIPANT_TYPES),
+                Rule::exists('participant_categories', 'key'),
                 Rule::unique('registration_fees')->where(fn ($query) => $query->where('attendance_method', $request->attendance_method)),
             ],
             'attendance_method' => ['required', Rule::in(self::ATTENDANCE_METHODS)],
@@ -47,7 +46,7 @@ class RegistrationFeeController extends Controller
         $validated = $request->validate([
             'participant_type' => [
                 'required',
-                Rule::in(self::PARTICIPANT_TYPES),
+                Rule::exists('participant_categories', 'key'),
                 Rule::unique('registration_fees')
                     ->where(fn ($query) => $query->where('attendance_method', $request->attendance_method))
                     ->ignore($registrationFee->id),
