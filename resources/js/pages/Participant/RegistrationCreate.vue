@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { attendanceMethodLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ClipboardCheck, ClipboardPlus, Landmark, Sparkles, Wallet } from 'lucide-vue-next';
+import { ClipboardCheck, ClipboardPlus, Landmark, MapPin, Sparkles, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface BankAccount {
@@ -46,6 +46,8 @@ const form = useForm({
     institution: '',
     special_needs: '',
     bank_account_id: null as number | null,
+    join_wisata_sabang: false,
+    join_wisata_lokal: false,
     terms_accepted: false,
 });
 
@@ -177,6 +179,27 @@ function submit() {
                         ></textarea>
                         <InputError :message="form.errors.special_needs" />
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2 text-base">
+                        <MapPin class="size-4 text-muted-foreground" /> Kegiatan Tambahan (Opsional)
+                    </CardTitle>
+                </CardHeader>
+                <CardContent class="grid gap-3">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
+                        <input v-model="form.join_wisata_sabang" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" />
+                        <span>Ikut Wisata Sabang</span>
+                    </label>
+                    <InputError :message="form.errors.join_wisata_sabang" />
+
+                    <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
+                        <input v-model="form.join_wisata_lokal" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" />
+                        <span>Ikut Wisata Lokal (Banda Aceh)</span>
+                    </label>
+                    <InputError :message="form.errors.join_wisata_lokal" />
                 </CardContent>
             </Card>
 

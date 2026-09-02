@@ -42,6 +42,8 @@ interface Registration {
     article_scope: string | null;
     institution: string;
     special_needs: string | null;
+    join_wisata_sabang: boolean;
+    join_wisata_lokal: boolean;
     status: string;
     payments: Payment[];
     articles: Article[];
@@ -107,6 +109,10 @@ function formatRupiah(value: string): string {
                     </p>
                     <p v-if="registration.special_needs">
                         Kebutuhan khusus: <span class="font-medium">{{ registration.special_needs }}</span>
+                    </p>
+                    <p v-if="registration.join_wisata_sabang">Kegiatan tambahan: <span class="font-medium">Ikut Wisata Sabang</span></p>
+                    <p v-if="registration.join_wisata_lokal">
+                        Kegiatan tambahan: <span class="font-medium">Ikut Wisata Lokal (Banda Aceh)</span>
                     </p>
                 </CardContent>
             </Card>

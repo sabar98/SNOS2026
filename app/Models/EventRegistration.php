@@ -24,6 +24,8 @@ class EventRegistration extends Model
         'institution',
         'special_needs',
         'join_gala_dinner',
+        'join_wisata_sabang',
+        'join_wisata_lokal',
         'terms_accepted_at',
         'status',
         'payment_due_at',
@@ -33,6 +35,8 @@ class EventRegistration extends Model
     {
         return [
             'join_gala_dinner' => 'boolean',
+            'join_wisata_sabang' => 'boolean',
+            'join_wisata_lokal' => 'boolean',
             'terms_accepted_at' => 'datetime',
             'payment_due_at' => 'datetime',
         ];

@@ -43,6 +43,8 @@ class EventRegistrationController extends Controller
                 'institution' => $validated['institution'],
                 'special_needs' => $validated['special_needs'] ?? null,
                 'join_gala_dinner' => $validated['join_gala_dinner'] ?? false,
+                'join_wisata_sabang' => $validated['join_wisata_sabang'] ?? false,
+                'join_wisata_lokal' => $validated['join_wisata_lokal'] ?? false,
                 'terms_accepted_at' => now(),
                 'status' => 'menunggu_pembayaran',
                 'payment_due_at' => now()->addDays(7),
@@ -105,6 +107,8 @@ class EventRegistrationController extends Controller
             'institution' => $validated['institution'],
             'special_needs' => $validated['special_needs'] ?? null,
             'join_gala_dinner' => $validated['join_gala_dinner'] ?? false,
+            'join_wisata_sabang' => $validated['join_wisata_sabang'] ?? false,
+            'join_wisata_lokal' => $validated['join_wisata_lokal'] ?? false,
         ];
 
         if (! $registration->isFeeLocked()) {

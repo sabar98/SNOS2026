@@ -24,6 +24,8 @@ class StoreEventRegistrationRequest extends FormRequest
             'institution' => ['required', 'string', 'max:255'],
             'special_needs' => ['nullable', 'string'],
             'join_gala_dinner' => ['boolean'],
+            'join_wisata_sabang' => ['boolean'],
+            'join_wisata_lokal' => ['boolean'],
             'bank_account_id' => ['required', 'exists:bank_accounts,id'],
             'terms_accepted' => ['accepted'],
         ];

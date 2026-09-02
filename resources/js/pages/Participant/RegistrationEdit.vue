@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { attendanceMethodLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Lock, Save, Sparkles, Wallet } from 'lucide-vue-next';
+import { ArrowLeft, Lock, MapPin, Save, Sparkles, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Registration {
@@ -20,6 +20,8 @@ interface Registration {
     article_scope: string | null;
     institution: string;
     special_needs: string | null;
+    join_wisata_sabang: boolean;
+    join_wisata_lokal: boolean;
 }
 
 interface RegistrationFeeRow {
@@ -52,6 +54,8 @@ const form = useForm({
     article_scope: props.registration.article_scope ?? '',
     institution: props.registration.institution,
     special_needs: props.registration.special_needs ?? '',
+    join_wisata_sabang: props.registration.join_wisata_sabang,
+    join_wisata_lokal: props.registration.join_wisata_lokal,
 });
 
 const selectClass =
@@ -167,6 +171,27 @@ function submit() {
                         ></textarea>
                         <InputError :message="form.errors.special_needs" />
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2 text-base">
+                        <MapPin class="size-4 text-sky-700 dark:text-sky-400" /> Kegiatan Tambahan (Opsional)
+                    </CardTitle>
+                </CardHeader>
+                <CardContent class="grid gap-3">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
+                        <input v-model="form.join_wisata_sabang" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" />
+                        <span>Ikut Wisata Sabang</span>
+                    </label>
+                    <InputError :message="form.errors.join_wisata_sabang" />
+
+                    <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
+                        <input v-model="form.join_wisata_lokal" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" />
+                        <span>Ikut Wisata Lokal (Banda Aceh)</span>
+                    </label>
+                    <InputError :message="form.errors.join_wisata_lokal" />
                 </CardContent>
             </Card>
 

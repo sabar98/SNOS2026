@@ -45,6 +45,49 @@ test('a participant can register for the event and a registration fee payment is
     expect($registration->payments->first()->bank_account)->toContain('BCA', '1234567890', 'Panitia SNOS 2026');
 });
 
+test('a participant can opt into wisata sabang and wisata lokal when registering', function () {
+    $user = participant();
+    $bank = activeBankAccount();
+
+    $response = $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'peserta_umum',
+        'attendance_method' => 'luring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+        'terms_accepted' => true,
+        'join_wisata_sabang' => true,
+        'join_wisata_lokal' => true,
+    ]);
+
+    $registration = EventRegistration::where('user_id', $user->id)->first();
+
+    $response->assertRedirect(route('participant.registrations.show', $registration));
+    expect($registration->join_wisata_sabang)->toBeTrue();
+    expect($registration->join_wisata_lokal)->toBeTrue();
+});
+
+test('a participant can update their wisata sabang and wisata lokal choices', function () {
+    $user = participant();
+    $registration = EventRegistration::factory()->for($user, 'user')->create([
+        'participant_type' => 'peserta_umum',
+        'join_wisata_sabang' => false,
+        'join_wisata_lokal' => false,
+    ]);
+
+    $response = $this->actingAs($user)->put("/participant/registrations/{$registration->id}", [
+        'participant_type' => 'peserta_umum',
+        'attendance_method' => 'luring',
+        'institution' => $registration->institution ?? 'Universitas Contoh',
+        'join_wisata_sabang' => true,
+        'join_wisata_lokal' => true,
+    ]);
+
+    $response->assertRedirect(route('participant.registrations.show', $registration));
+    $registration->refresh();
+    expect($registration->join_wisata_sabang)->toBeTrue();
+    expect($registration->join_wisata_lokal)->toBeTrue();
+});
+
 test('a participant can register for more than one event/activity', function () {
     $user = participant();
     $bank = activeBankAccount();
