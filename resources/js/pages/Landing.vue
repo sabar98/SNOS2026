@@ -66,6 +66,8 @@ interface Partner {
 
 interface Seminar {
     name: string;
+    site_name: string;
+    site_logo_path: string | null;
     theme: string;
     date_range: string;
     location: string;
@@ -182,12 +184,19 @@ onUnmounted(() => {
         <header class="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                 <span class="flex items-center gap-2 font-semibold">
+                    <img
+                        v-if="seminar.site_logo_path"
+                        :src="`/storage/${seminar.site_logo_path}`"
+                        :alt="seminar.site_name"
+                        class="size-8 shrink-0 rounded-md object-contain"
+                    />
                     <span
+                        v-else
                         class="flex size-8 items-center justify-center rounded-md bg-gradient-to-br from-sky-500 to-blue-700 text-sm text-white shadow-sm"
                     >
-                        S
+                        {{ seminar.site_name.charAt(0) }}
                     </span>
-                    <span class="hidden sm:inline">SNOS 2026</span>
+                    <span class="hidden sm:inline">{{ seminar.site_name }}</span>
                 </span>
 
                 <nav class="hidden items-center gap-3 sm:flex">
@@ -539,7 +548,13 @@ onUnmounted(() => {
                     <div>
                         <div class="flex items-center gap-3">
                             <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                                <AppLogoIcon class="size-6 fill-current text-sky-700" />
+                                <img
+                                    v-if="seminar.site_logo_path"
+                                    :src="`/storage/${seminar.site_logo_path}`"
+                                    :alt="seminar.site_name"
+                                    class="size-8 object-contain"
+                                />
+                                <AppLogoIcon v-else class="size-6 fill-current text-sky-700" />
                             </div>
                             <div>
                                 <p class="font-semibold text-white">{{ seminar.name }}</p>

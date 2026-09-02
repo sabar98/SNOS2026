@@ -17,14 +17,16 @@ class LandingController extends Controller
         return Inertia::render('Landing', [
             'seminar' => [
                 'name' => $setting->name,
+                'site_name' => $setting->site_name,
+                'site_logo_path' => $setting->site_logo_path,
                 'theme' => $setting->theme,
                 'date_range' => $setting->date_range,
                 'location' => $setting->location,
                 'scope' => $setting->scope,
                 'speakers' => $setting->speakers,
                 'timeline' => $setting->timeline,
-                'organizer' => config('seminar.organizer'),
-                'contact' => config('seminar.contact'),
+                'organizer' => $setting->organizer,
+                'contact' => $setting->contact,
                 'leader_message' => $setting->leader_message,
                 'partners' => $setting->partners,
             ],

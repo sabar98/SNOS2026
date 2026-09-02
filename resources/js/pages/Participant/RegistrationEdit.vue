@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { attendanceMethodLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Lock, MessageSquareHeart, Save, Sparkles, Wallet } from 'lucide-vue-next';
+import { ArrowLeft, Lock, Save, Sparkles, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Registration {
@@ -20,7 +20,6 @@ interface Registration {
     article_scope: string | null;
     institution: string;
     special_needs: string | null;
-    join_gala_dinner: boolean;
 }
 
 interface RegistrationFeeRow {
@@ -53,7 +52,6 @@ const form = useForm({
     article_scope: props.registration.article_scope ?? '',
     institution: props.registration.institution,
     special_needs: props.registration.special_needs ?? '',
-    join_gala_dinner: props.registration.join_gala_dinner,
 });
 
 const selectClass =
@@ -169,14 +167,6 @@ function submit() {
                         ></textarea>
                         <InputError :message="form.errors.special_needs" />
                     </div>
-
-                    <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
-                        <input v-model="form.join_gala_dinner" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" />
-                        <span class="flex items-center gap-2">
-                            <MessageSquareHeart class="size-4 shrink-0 text-muted-foreground" />
-                            Ikut malam keakraban
-                        </span>
-                    </label>
                 </CardContent>
             </Card>
 

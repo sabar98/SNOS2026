@@ -10,7 +10,7 @@ import { useInitials } from '@/composables/useInitials';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
-import { CalendarClock, ExternalLink, Globe, Handshake, ListChecks, MessageSquareQuote, Mic, Plus, Trash2 } from 'lucide-vue-next';
+import { CalendarClock, ExternalLink, Globe, Handshake, ListChecks, Mail, MessageSquareQuote, Mic, PanelBottom, Plus, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 interface Speaker {
@@ -37,8 +37,20 @@ interface Partner {
     logo_path?: string | null;
 }
 
+interface Contact {
+    email: string;
+    phone: string;
+    facebook: string;
+    instagram: string;
+    address: string;
+}
+
 interface Setting {
     name: string;
+    site_name: string;
+    site_logo_path: string | null;
+    organizer: string;
+    contact: Contact;
     theme: string;
     date_range: string;
     location: string;
@@ -59,6 +71,11 @@ const { getInitials } = useInitials();
 
 const form = useForm({
     name: props.setting.name,
+    site_name: props.setting.site_name,
+    site_logo_path: props.setting.site_logo_path,
+    site_logo: null as File | null,
+    organizer: props.setting.organizer,
+    contact: { ...props.setting.contact },
     theme: props.setting.theme,
     date_range: props.setting.date_range,
     location: props.setting.location,
@@ -118,6 +135,18 @@ function onSpeakerPhotoChange(event: Event, index: number) {
     speakerPhotoPreviews.value[index] = file ? URL.createObjectURL(file) : null;
 }
 
+const siteLogoPreview = ref<string | null>(null);
+
+function onSiteLogoChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    form.site_logo = file;
+
+    if (siteLogoPreview.value) {
+        URL.revokeObjectURL(siteLogoPreview.value);
+    }
+    siteLogoPreview.value = file ? URL.createObjectURL(file) : null;
+}
+
 const leaderPhotoPreview = ref<string | null>(null);
 
 function onLeaderPhotoChange(event: Event) {
@@ -168,6 +197,7 @@ function submit() {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
+            form.site_logo = null;
             form.speakers.forEach((speaker) => {
                 speaker.photo = null;
             });
@@ -202,6 +232,41 @@ function submit() {
             >
                 Sebagian isian belum valid. Periksa kembali detail di bawah ini.
             </div>
+
+            <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2 text-base"><Globe class="size-4 text-muted-foreground" /> Logo &amp; Nama Website</CardTitle>
+                </CardHeader>
+                <CardContent class="grid gap-4">
+                    <div class="flex items-center gap-4">
+                        <Avatar size="base" shape="square" class="shrink-0 border bg-white shadow-sm">
+                            <AvatarImage
+                                v-if="siteLogoPreview || form.site_logo_path"
+                                :src="siteLogoPreview ?? `/storage/${form.site_logo_path}`"
+                                :alt="form.site_name"
+                            />
+                            <AvatarFallback class="text-lg">{{ getInitials(form.site_name) || '?' }}</AvatarFallback>
+                        </Avatar>
+                        <div class="flex flex-1 flex-col gap-1.5">
+                            <Label for="site_logo">{{ form.site_logo_path ? 'Ganti Logo' : 'Unggah Logo' }}</Label>
+                            <input
+                                id="site_logo"
+                                type="file"
+                                accept="image/*"
+                                class="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
+                                @change="onSiteLogoChange"
+                            />
+                            <InputError :message="form.errors.site_logo" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="site_name">Nama Website</Label>
+                        <Input id="site_name" v-model="form.site_name" required placeholder="SNOS 2026" />
+                        <p class="text-xs text-muted-foreground">Ditampilkan di header dan footer landing page. Boleh berbeda dari nama lengkap seminar.</p>
+                        <InputError :message="form.errors.site_name" />
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
                 <CardHeader>
@@ -431,6 +496,58 @@ function submit() {
                     <Button type="button" variant="outline" size="sm" class="w-fit" @click="addPartner">
                         <Plus class="size-4" /> Tambah Mitra
                     </Button>
+                </CardContent>
+            </Card>
+
+            <Card class="border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2 text-base">
+                        <PanelBottom class="size-4 text-muted-foreground" /> Footer &amp; Kontak
+                    </CardTitle>
+                </CardHeader>
+                <CardContent class="grid gap-4">
+                    <div class="grid gap-2">
+                        <Label for="organizer">Penyelenggara</Label>
+                        <Input id="organizer" v-model="form.organizer" required placeholder="Universitas Contoh" />
+                        <InputError :message="form.errors.organizer" />
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="contact_email">Email</Label>
+                            <div class="relative">
+                                <Mail class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input id="contact_email" v-model="form.contact.email" type="email" required class="pl-10" />
+                            </div>
+                            <InputError :message="form.errors['contact.email']" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="contact_phone">Telepon</Label>
+                            <Input id="contact_phone" v-model="form.contact.phone" required placeholder="+62 812-3456-7890" />
+                            <InputError :message="form.errors['contact.phone']" />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="contact_facebook">Tautan Facebook</Label>
+                            <Input id="contact_facebook" v-model="form.contact.facebook" placeholder="https://facebook.com/..." />
+                            <InputError :message="form.errors['contact.facebook']" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="contact_instagram">Tautan Instagram</Label>
+                            <Input id="contact_instagram" v-model="form.contact.instagram" placeholder="https://instagram.com/..." />
+                            <InputError :message="form.errors['contact.instagram']" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="contact_address">Alamat</Label>
+                        <textarea
+                            id="contact_address"
+                            v-model="form.contact.address"
+                            rows="2"
+                            class="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        ></textarea>
+                        <InputError :message="form.errors['contact.address']" />
+                    </div>
                 </CardContent>
             </Card>
 

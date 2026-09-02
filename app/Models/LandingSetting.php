@@ -8,6 +8,10 @@ class LandingSetting extends Model
 {
     protected $fillable = [
         'name',
+        'site_name',
+        'site_logo_path',
+        'organizer',
+        'contact',
         'theme',
         'date_range',
         'location',
@@ -21,6 +25,7 @@ class LandingSetting extends Model
     protected function casts(): array
     {
         return [
+            'contact' => 'array',
             'scope' => 'array',
             'speakers' => 'array',
             'timeline' => 'array',
@@ -37,6 +42,10 @@ class LandingSetting extends Model
     {
         return static::firstOrCreate([], [
             'name' => config('seminar.name'),
+            'site_name' => 'SNOS 2026',
+            'site_logo_path' => null,
+            'organizer' => config('seminar.organizer'),
+            'contact' => config('seminar.contact'),
             'theme' => config('seminar.theme'),
             'date_range' => config('seminar.date_range'),
             'location' => config('seminar.location'),

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\LandingSettingController;
 use App\Http\Controllers\Admin\LoaSettingController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\NarasumberController as AdminNarasumberController;
+use App\Http\Controllers\Admin\ParticipantAccountController;
 use App\Http\Controllers\Admin\ParticipantCategoryController;
 use App\Http\Controllers\Admin\ParticipantController as AdminParticipantController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
@@ -85,6 +86,13 @@ Route::middleware('auth')->group(function () {
 
         Route::get('participants', [AdminParticipantController::class, 'index'])->name('participants.index');
         Route::get('participants/{registration}', [AdminParticipantController::class, 'show'])->name('participants.show');
+
+        Route::get('participant-accounts', [ParticipantAccountController::class, 'index'])->name('participant-accounts.index');
+        Route::get('participant-accounts/create', [ParticipantAccountController::class, 'create'])->name('participant-accounts.create');
+        Route::post('participant-accounts', [ParticipantAccountController::class, 'store'])->name('participant-accounts.store');
+        Route::get('participant-accounts/{participantAccount}/edit', [ParticipantAccountController::class, 'edit'])->name('participant-accounts.edit');
+        Route::put('participant-accounts/{participantAccount}', [ParticipantAccountController::class, 'update'])->name('participant-accounts.update');
+        Route::delete('participant-accounts/{participantAccount}', [ParticipantAccountController::class, 'destroy'])->name('participant-accounts.destroy');
 
         Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
         Route::put('payments/{payment}', [AdminPaymentController::class, 'update'])->name('payments.update');

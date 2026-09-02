@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { attendanceMethodLabels } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ClipboardCheck, ClipboardPlus, Landmark, MessageSquareHeart, Sparkles, Wallet } from 'lucide-vue-next';
+import { ClipboardCheck, ClipboardPlus, Landmark, Sparkles, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface BankAccount {
@@ -45,7 +45,6 @@ const form = useForm({
     article_scope: '',
     institution: '',
     special_needs: '',
-    join_gala_dinner: false,
     bank_account_id: null as number | null,
     terms_accepted: false,
 });
@@ -188,14 +187,6 @@ function submit() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent class="grid gap-3">
-                    <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
-                        <input v-model="form.join_gala_dinner" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" />
-                        <span class="flex items-center gap-2">
-                            <MessageSquareHeart class="size-4 shrink-0 text-muted-foreground" />
-                            Ikut malam keakraban
-                        </span>
-                    </label>
-
                     <label class="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/40">
                         <input v-model="form.terms_accepted" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-input" required />
                         <span>Saya menyetujui syarat dan ketentuan kegiatan</span>

@@ -45,6 +45,37 @@ test('a participant can register for the event and a registration fee payment is
     expect($registration->payments->first()->bank_account)->toContain('BCA', '1234567890', 'Panitia SNOS 2026');
 });
 
+test('a participant can register for more than one event/activity', function () {
+    $user = participant();
+    $bank = activeBankAccount();
+
+    $first = $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'peserta_umum',
+        'attendance_method' => 'luring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+        'terms_accepted' => true,
+    ]);
+    $first->assertRedirect();
+
+    $second = $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'presenter_daring',
+        'attendance_method' => 'daring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+        'terms_accepted' => true,
+    ]);
+    $second->assertRedirect();
+
+    $registrations = EventRegistration::where('user_id', $user->id)->get();
+    expect($registrations)->toHaveCount(2);
+    expect($registrations->pluck('participant_type')->all())->toBe(['peserta_umum', 'presenter_daring']);
+
+    // Both registrations must be independently visible on the dashboard.
+    $this->actingAs($user)->get('/participant/dashboard')
+        ->assertInertia(fn ($page) => $page->has('registrations', 2));
+});
+
 test('registration requires accepting the terms', function () {
     $user = participant();
     $bank = activeBankAccount();

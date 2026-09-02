@@ -15,7 +15,7 @@ import {
 } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ClipboardList, MessageSquareHeart, Pencil } from 'lucide-vue-next';
+import { ClipboardList, Pencil } from 'lucide-vue-next';
 
 interface Payment {
     id: number;
@@ -42,7 +42,6 @@ interface Registration {
     article_scope: string | null;
     institution: string;
     special_needs: string | null;
-    join_gala_dinner: boolean;
     status: string;
     payments: Payment[];
     articles: Article[];
@@ -108,9 +107,6 @@ function formatRupiah(value: string): string {
                     </p>
                     <p v-if="registration.special_needs">
                         Kebutuhan khusus: <span class="font-medium">{{ registration.special_needs }}</span>
-                    </p>
-                    <p v-if="registration.join_gala_dinner" class="flex items-center gap-1.5 text-sky-700 dark:text-sky-400">
-                        <MessageSquareHeart class="size-3.5" /> Ikut malam keakraban
                     </p>
                 </CardContent>
             </Card>

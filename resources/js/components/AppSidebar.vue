@@ -15,6 +15,7 @@ import {
     FileText,
     Folder,
     Globe,
+    IdCard,
     Landmark,
     LayoutGrid,
     Megaphone,
@@ -46,6 +47,7 @@ const navByRole: Record<string, NavItem[]> = {
     admin: [
         { title: 'Dashboard', href: '/admin/dashboard', icon: LayoutGrid },
         { title: 'Peserta', href: '/admin/participants', icon: Users },
+        { title: 'Akun Peserta', href: '/admin/participant-accounts', icon: IdCard },
         { title: 'Check-in QR', href: '/admin/check-in', icon: QrCode },
         { title: 'Pembayaran', href: '/admin/payments', icon: Wallet },
         { title: 'Bank Rekening', href: '/admin/bank-accounts', icon: Landmark },

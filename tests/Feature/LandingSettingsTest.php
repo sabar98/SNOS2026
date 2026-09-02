@@ -5,6 +5,21 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
+function baseLandingPayload(): array
+{
+    return [
+        'site_name' => 'SNOS 2026',
+        'organizer' => 'Universitas Contoh',
+        'contact' => [
+            'email' => 'snos2026@contoh.ac.id',
+            'phone' => '+62 812-3456-7890',
+            'facebook' => 'https://facebook.com/snos2026',
+            'instagram' => 'https://instagram.com/snos2026',
+            'address' => 'Gedung Auditorium Universitas Contoh',
+        ],
+    ];
+}
+
 test('the landing page renders using the current landing settings, seeded from config on first use', function () {
     expect(LandingSetting::count())->toBe(0);
 
@@ -15,6 +30,7 @@ test('the landing page renders using the current landing settings, seeded from c
         ->component('Landing')
         ->where('seminar.name', config('seminar.name'))
         ->where('seminar.theme', config('seminar.theme'))
+        ->where('seminar.site_name', 'SNOS 2026')
     );
     expect(LandingSetting::count())->toBe(1);
 });
@@ -33,6 +49,9 @@ test('an admin can view the landing settings edit page', function () {
         ->has('setting.timeline')
         ->has('setting.leader_message')
         ->has('setting.partners')
+        ->has('setting.site_name')
+        ->has('setting.organizer')
+        ->has('setting.contact')
     );
 });
 
@@ -40,7 +59,7 @@ test('an admin can update the landing settings and the change reflects on the pu
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
-    $response = $this->actingAs($admin)->put('/admin/landing-settings', [
+    $response = $this->actingAs($admin)->put('/admin/landing-settings', baseLandingPayload() + [
         'name' => 'Seminar Uji Coba 2027',
         'theme' => 'Tema Baru',
         'date_range' => '1-2 Januari 2027',
@@ -84,13 +103,60 @@ test('an admin can update the landing settings and the change reflects on the pu
     );
 });
 
-test('an admin can upload a speaker photo and set a topic', function () {
+test('an admin can update the site logo, name, and footer contact info, reflected on the landing page', function () {
     Storage::fake('public');
 
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
     $response = $this->actingAs($admin)->post('/admin/landing-settings', [
+        '_method' => 'put',
+        'name' => 'Seminar Uji Coba',
+        'site_name' => 'Nama Website Baru',
+        'site_logo' => UploadedFile::fake()->image('logo.png', 200, 200),
+        'organizer' => 'Yayasan Uji Coba',
+        'contact' => [
+            'email' => 'kontak@ujicoba.test',
+            'phone' => '+62 811-0000-0000',
+            'facebook' => 'https://facebook.com/ujicoba',
+            'instagram' => 'https://instagram.com/ujicoba',
+            'address' => 'Jl. Uji Coba No. 1',
+        ],
+        'theme' => 'Tema',
+        'date_range' => '1 Januari 2027',
+        'location' => 'Gedung Uji Coba',
+        'scope' => ['Kecerdasan Buatan'],
+        'speakers' => [],
+        'timeline' => [],
+        'leader_message' => ['name' => 'Ketua', 'title' => 'Ketua Panitia', 'message' => 'Sambutan.'],
+        'partners' => [],
+    ]);
+
+    $response->assertRedirect();
+
+    $setting = LandingSetting::current();
+    expect($setting->site_name)->toBe('Nama Website Baru');
+    expect($setting->site_logo_path)->not->toBeNull();
+    expect($setting->organizer)->toBe('Yayasan Uji Coba');
+    expect($setting->contact['email'])->toBe('kontak@ujicoba.test');
+    Storage::disk('public')->assertExists($setting->site_logo_path);
+
+    $landingResponse = $this->get('/');
+    $landingResponse->assertInertia(fn ($page) => $page
+        ->where('seminar.site_name', 'Nama Website Baru')
+        ->where('seminar.site_logo_path', $setting->site_logo_path)
+        ->where('seminar.organizer', 'Yayasan Uji Coba')
+        ->where('seminar.contact.email', 'kontak@ujicoba.test')
+    );
+});
+
+test('an admin can upload a speaker photo and set a topic', function () {
+    Storage::fake('public');
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $response = $this->actingAs($admin)->post('/admin/landing-settings', baseLandingPayload() + [
         '_method' => 'put',
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
@@ -126,7 +192,7 @@ test('an admin can upload a photo for the leader welcome message', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
-    $response = $this->actingAs($admin)->post('/admin/landing-settings', [
+    $response = $this->actingAs($admin)->post('/admin/landing-settings', baseLandingPayload() + [
         '_method' => 'put',
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
@@ -158,7 +224,7 @@ test('an admin can upload a partner logo', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
-    $response = $this->actingAs($admin)->post('/admin/landing-settings', [
+    $response = $this->actingAs($admin)->post('/admin/landing-settings', baseLandingPayload() + [
         '_method' => 'put',
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
@@ -190,7 +256,7 @@ test('re-uploading a speaker photo replaces the old file and keeps the previous 
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
-    $this->actingAs($admin)->post('/admin/landing-settings', [
+    $this->actingAs($admin)->post('/admin/landing-settings', baseLandingPayload() + [
         '_method' => 'put',
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
@@ -207,7 +273,7 @@ test('re-uploading a speaker photo replaces the old file and keeps the previous 
     $firstPath = LandingSetting::current()->speakers[0]['photo_path'];
 
     // Resubmit without a new file, carrying forward the existing photo_path — the photo must survive.
-    $this->actingAs($admin)->put('/admin/landing-settings', [
+    $this->actingAs($admin)->put('/admin/landing-settings', baseLandingPayload() + [
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
         'date_range' => '1 Januari 2027',
@@ -224,7 +290,7 @@ test('re-uploading a speaker photo replaces the old file and keeps the previous 
     Storage::disk('public')->assertExists($firstPath);
 
     // Now replace it with a new file — the old file should be deleted.
-    $this->actingAs($admin)->post('/admin/landing-settings', [
+    $this->actingAs($admin)->post('/admin/landing-settings', baseLandingPayload() + [
         '_method' => 'put',
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
@@ -254,7 +320,7 @@ test('updating landing settings requires at least one article scope', function (
     $admin = User::factory()->create();
     $admin->assignRole('admin');
 
-    $response = $this->actingAs($admin)->put('/admin/landing-settings', [
+    $response = $this->actingAs($admin)->put('/admin/landing-settings', baseLandingPayload() + [
         'name' => 'Seminar Uji Coba',
         'theme' => 'Tema',
         'date_range' => '1 Januari 2027',

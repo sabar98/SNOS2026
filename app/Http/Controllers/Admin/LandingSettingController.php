@@ -23,6 +23,15 @@ class LandingSettingController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'site_name' => ['required', 'string', 'max:100'],
+            'site_logo_path' => ['nullable', 'string'],
+            'site_logo' => ['nullable', 'image', 'max:2048'],
+            'organizer' => ['required', 'string', 'max:255'],
+            'contact.email' => ['required', 'email', 'max:255'],
+            'contact.phone' => ['required', 'string', 'max:50'],
+            'contact.facebook' => ['nullable', 'string', 'max:255'],
+            'contact.instagram' => ['nullable', 'string', 'max:255'],
+            'contact.address' => ['required', 'string', 'max:500'],
             'theme' => ['required', 'string', 'max:255'],
             'date_range' => ['required', 'string', 'max:255'],
             'location' => ['required', 'string', 'max:255'],
@@ -49,6 +58,15 @@ class LandingSettingController extends Controller
         ]);
 
         $setting = LandingSetting::current();
+
+        $siteLogoPath = $validated['site_logo_path'] ?? null;
+
+        if ($request->hasFile('site_logo')) {
+            if ($siteLogoPath) {
+                Storage::disk('public')->delete($siteLogoPath);
+            }
+            $siteLogoPath = $request->file('site_logo')->store('branding', 'public');
+        }
 
         $speakers = collect($validated['speakers'])->map(function (array $speaker, int $index) use ($request) {
             $photoPath = $speaker['photo_path'] ?? null;
@@ -95,6 +113,10 @@ class LandingSettingController extends Controller
 
         $setting->update([
             'name' => $validated['name'],
+            'site_name' => $validated['site_name'],
+            'site_logo_path' => $siteLogoPath,
+            'organizer' => $validated['organizer'],
+            'contact' => $validated['contact'],
             'theme' => $validated['theme'],
             'date_range' => $validated['date_range'],
             'location' => $validated['location'],
