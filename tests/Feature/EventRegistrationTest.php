@@ -1,9 +1,11 @@
 <?php
 
+use App\Mail\RegistrationPaymentMail;
 use App\Models\BankAccount;
 use App\Models\EventRegistration;
 use App\Models\ParticipantCategory;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 function participant(): User
 {
@@ -44,6 +46,47 @@ test('a participant can register for the event and a registration fee payment is
     expect((float) $registration->payments->first()->amount)->toBe(750000.0);
     expect($registration->payments->first()->bank_account_id)->toBe($bank->id);
     expect($registration->payments->first()->bank_account)->toContain('BCA', '1234567890', 'Panitia SNOS 2026');
+});
+
+test('a payment info email with the activity, amount, and bank account is sent after registering', function () {
+    Mail::fake();
+    $user = participant();
+    $bank = activeBankAccount();
+
+    $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'presenter_luring',
+        'attendance_method' => 'luring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+        'terms_accepted' => true,
+    ]);
+
+    $registration = EventRegistration::where('user_id', $user->id)->first();
+    $payment = $registration->payments->first();
+
+    Mail::assertSent(RegistrationPaymentMail::class, function (RegistrationPaymentMail $mail) use ($user, $registration, $payment) {
+        return $mail->hasTo($user->email)
+            && $mail->registration->is($registration)
+            && $mail->payment->is($payment);
+    });
+});
+
+test('registration still succeeds even if the payment info email fails to send', function () {
+    Mail::shouldReceive('to->send')->once()->andThrow(new RuntimeException('Connection could not be established with host smtp.example.com [Connection timed out #110]'));
+    $user = participant();
+    $bank = activeBankAccount();
+
+    $response = $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'presenter_luring',
+        'attendance_method' => 'luring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+        'terms_accepted' => true,
+    ]);
+
+    $registration = EventRegistration::where('user_id', $user->id)->first();
+    $response->assertRedirect(route('participant.registrations.show', $registration));
+    expect($registration)->not->toBeNull();
 });
 
 test('a participant can register under a custom admin-added participant category', function () {

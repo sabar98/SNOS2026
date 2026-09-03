@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Participant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\StoreEventRegistrationRequest;
 use App\Http\Requests\Participant\UpdateEventRegistrationRequest;
+use App\Mail\RegistrationPaymentMail;
 use App\Models\BankAccount;
 use App\Models\EventRegistration;
 use App\Models\ParticipantCategory;
@@ -12,6 +13,8 @@ use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,7 +36,7 @@ class EventRegistrationController extends Controller
         $validated = $request->validated();
         $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
 
-        $registration = DB::transaction(function () use ($user, $validated, $bankAccount) {
+        [$registration, $payment] = DB::transaction(function () use ($user, $validated, $bankAccount) {
             $registration = EventRegistration::create([
                 'registration_number' => 'SNOS2026-'.Str::upper(Str::random(8)),
                 'user_id' => $user->id,
@@ -50,7 +53,7 @@ class EventRegistrationController extends Controller
                 'payment_due_at' => now()->addDays(7),
             ]);
 
-            $registration->payments()->create([
+            $payment = $registration->payments()->create([
                 'type' => 'registrasi',
                 'amount' => RegistrationFee::amountFor($registration->participant_type, $registration->attendance_method),
                 'bank_account' => "{$bankAccount->bank_name} {$bankAccount->account_number} a.n. {$bankAccount->account_holder}",
@@ -60,8 +63,20 @@ class EventRegistrationController extends Controller
                 'status' => 'belum_bayar',
             ]);
 
-            return $registration;
+            return [$registration, $payment];
         });
+
+        // A mail-server hiccup must never turn a successful registration into a 500
+        // (same non-blocking pattern as the account-welcome email).
+        try {
+            Mail::to($user->email)->send(new RegistrationPaymentMail($registration, $payment));
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send registration payment email.', [
+                'registration_id' => $registration->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('participant.registrations.show', $registration)
             ->with('status', 'registration-created');
