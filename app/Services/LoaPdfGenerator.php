@@ -32,8 +32,6 @@ class LoaPdfGenerator
             'loa' => $loa,
             'article' => $article,
             'seminarName' => config('seminar.name'),
-            'seminarDateRange' => config('seminar.date_range'),
-            'seminarLocation' => config('seminar.location'),
             'participantName' => $article->eventRegistration->user->name,
             'journalName' => $article->journal?->name,
             'signerName' => config('seminar.certificate_signer.name'),

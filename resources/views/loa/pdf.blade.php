@@ -19,21 +19,6 @@
             width: 100%;
             display: block;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .eyebrow {
-            letter-spacing: 3px;
-            font-size: 11px;
-            color: #52514e;
-            text-transform: uppercase;
-        }
-        .meta {
-            font-size: 11px;
-            color: #52514e;
-            margin-top: 4px;
-        }
         .title {
             text-align: center;
             font-size: 18px;
@@ -95,11 +80,6 @@
 <body>
     <div class="letterhead">
         <img src="data:image/png;base64,{{ $letterheadBase64 }}" alt="Kop Surat {{ $seminarName }}">
-    </div>
-
-    <div class="header">
-        <div class="eyebrow">Letter of Acceptance</div>
-        <div class="meta">{{ $seminarDateRange }} &middot; {{ $seminarLocation }}</div>
     </div>
 
     <div class="title">Surat Penerimaan Artikel</div>
