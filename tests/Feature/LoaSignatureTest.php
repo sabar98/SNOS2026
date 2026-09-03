@@ -113,7 +113,7 @@ test('a non-admin cannot manage the LoA signature', function () {
     $this->actingAs($participant)->delete('/admin/loa-settings')->assertForbidden();
 });
 
-test('the LoA PDF blade view renders the uploaded signature instead of the stylized text mark', function () {
+test('the LoA PDF blade view renders the uploaded signature image only, with no stylized text fallback', function () {
     $sharedData = [
         'article' => Article::factory()->make(['title' => 'Judul Uji', 'article_number' => 'ART-TEST-1']),
         'seminarName' => 'SNOS 2026',
@@ -134,7 +134,6 @@ test('the LoA PDF blade view renders the uploaded signature instead of the styli
 
     expect($withSignature)->toContain('class="signature-image"');
     expect($withSignature)->toContain('data:image/png;base64,');
-    expect($withSignature)->not->toContain('class="signature-mark"');
 
     $withoutSignature = view('loa.pdf', $sharedData + [
         'loa' => new LetterOfAcceptance(['loa_number' => 'LOA-TEST-2', 'issued_at' => now()]),
@@ -142,8 +141,10 @@ test('the LoA PDF blade view renders the uploaded signature instead of the styli
         'signatureMime' => null,
     ])->render();
 
-    expect($withoutSignature)->toContain('class="signature-mark"');
+    // No signature uploaded yet: no image, and no stylized text standing in for one either
+    // — only a real uploaded signature is ever rendered as "the signature".
     expect($withoutSignature)->not->toContain('class="signature-image"');
+    expect($withoutSignature)->not->toContain('class="signature-mark"');
 });
 
 test('issuing a LoA after uploading a signature still produces a valid stored PDF', function () {
