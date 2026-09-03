@@ -24,6 +24,10 @@ class LoaPdfGenerator
             $signatureMime = Storage::disk('public')->mimeType($signaturePath);
         }
 
+        // Bundled with the app (not admin-uploadable) — the panitia's official kop surat.
+        $letterheadFile = resource_path('images/loa-letterhead.png');
+        $letterheadBase64 = base64_encode(file_get_contents($letterheadFile));
+
         $pdf = Pdf::loadView('loa.pdf', [
             'loa' => $loa,
             'article' => $article,
@@ -36,6 +40,7 @@ class LoaPdfGenerator
             'signerTitle' => config('seminar.certificate_signer.title'),
             'signatureBase64' => $signatureBase64,
             'signatureMime' => $signatureMime,
+            'letterheadBase64' => $letterheadBase64,
         ])->setPaper('a4', 'portrait');
 
         $path = "loa/{$loa->loa_number}.pdf";

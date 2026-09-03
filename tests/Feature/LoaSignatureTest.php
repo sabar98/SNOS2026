@@ -123,6 +123,7 @@ test('the LoA PDF blade view renders the uploaded signature instead of the styli
         'journalName' => null,
         'signerName' => 'Dr. Contoh',
         'signerTitle' => 'Ketua Panitia',
+        'letterheadBase64' => base64_encode('fake-letterhead-bytes'),
     ];
 
     $withSignature = view('loa.pdf', $sharedData + [

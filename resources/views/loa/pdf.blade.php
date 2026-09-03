@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="utf-8">
     <title>Letter of Acceptance {{ $loa->loa_number }}</title>
@@ -12,10 +12,15 @@
             font-size: 13px;
             line-height: 1.6;
         }
+        .letterhead {
+            margin-bottom: 20px;
+        }
+        .letterhead img {
+            width: 100%;
+            display: block;
+        }
         .header {
             text-align: center;
-            border-bottom: 3px solid #2a78d6;
-            padding-bottom: 16px;
             margin-bottom: 30px;
         }
         .eyebrow {
@@ -23,11 +28,6 @@
             font-size: 11px;
             color: #52514e;
             text-transform: uppercase;
-        }
-        .seminar-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 6px;
         }
         .meta {
             font-size: 11px;
@@ -99,9 +99,12 @@
     </style>
 </head>
 <body>
+    <div class="letterhead">
+        <img src="data:image/png;base64,{{ $letterheadBase64 }}" alt="Kop Surat {{ $seminarName }}">
+    </div>
+
     <div class="header">
         <div class="eyebrow">Letter of Acceptance</div>
-        <div class="seminar-name">{{ $seminarName }}</div>
         <div class="meta">{{ $seminarDateRange }} &middot; {{ $seminarLocation }}</div>
     </div>
 
@@ -140,7 +143,7 @@
         <tr>
             <td class="label">Tanggal Diterbitkan</td>
             <td class="colon">:</td>
-            <td>{{ $loa->issued_at?->translatedFormat('d F Y') }}</td>
+            <td>{{ $loa->issued_at?->locale('id')->translatedFormat('d F Y') }}</td>
         </tr>
     </table>
 
