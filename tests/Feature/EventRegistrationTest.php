@@ -2,6 +2,7 @@
 
 use App\Models\BankAccount;
 use App\Models\EventRegistration;
+use App\Models\ParticipantCategory;
 use App\Models\User;
 
 function participant(): User
@@ -43,6 +44,37 @@ test('a participant can register for the event and a registration fee payment is
     expect((float) $registration->payments->first()->amount)->toBe(750000.0);
     expect($registration->payments->first()->bank_account_id)->toBe($bank->id);
     expect($registration->payments->first()->bank_account)->toContain('BCA', '1234567890', 'Panitia SNOS 2026');
+});
+
+test('a participant can register under a custom admin-added participant category', function () {
+    // Regression test: participant_categories.key is admin-editable (Admin >
+    // Kategori Peserta lets you add e.g. a "Peserta Dosen" golongan), but
+    // event_registrations.participant_type used to be a fixed ENUM seeded only
+    // with the 4 original categories. Registering under any newer category
+    // failed with a 500 (MySQL "Data truncated for column participant_type").
+    ParticipantCategory::create([
+        'key' => 'peserta_dosen',
+        'label' => 'Peserta Dosen',
+        'golongan' => 'dosen',
+        'is_presenter' => false,
+        'is_active' => true,
+    ]);
+    $user = participant();
+    $bank = activeBankAccount();
+
+    $response = $this->actingAs($user)->post('/participant/registrations', [
+        'participant_type' => 'peserta_dosen',
+        'attendance_method' => 'luring',
+        'institution' => 'Universitas Contoh',
+        'bank_account_id' => $bank->id,
+        'terms_accepted' => true,
+    ]);
+
+    $registration = EventRegistration::where('user_id', $user->id)->first();
+
+    $response->assertRedirect(route('participant.registrations.show', $registration));
+    expect($registration)->not->toBeNull();
+    expect($registration->participant_type)->toBe('peserta_dosen');
 });
 
 test('a participant can opt into wisata sabang and wisata lokal when registering', function () {
