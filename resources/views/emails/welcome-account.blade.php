@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Language" content="id">
     <title>Akun {{ $seminarName }} Berhasil Dibuat</title>
     <style>
         body {

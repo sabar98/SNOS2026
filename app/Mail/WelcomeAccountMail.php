@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
 class WelcomeAccountMail extends Mailable
@@ -22,6 +23,18 @@ class WelcomeAccountMail extends Mailable
     {
         return new Envelope(
             subject: 'Akun '.config('seminar.name').' Berhasil Dibuat',
+        );
+    }
+
+    /**
+     * Hints to mail clients (Gmail in particular silently auto-translates a message
+     * once a viewer has ever accepted "always translate" for a language) that this
+     * message is written in Indonesian, not English.
+     */
+    public function headers(): Headers
+    {
+        return new Headers(
+            text: ['Content-Language' => 'id'],
         );
     }
 
