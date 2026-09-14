@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { AlertTriangle, CheckCircle2, FileText, FileUp, Paperclip, Plus, ScrollText, Trash2, Users, X } from 'lucide-vue-next';
+import { AlertTriangle, CheckCircle2, Download, FileText, FileUp, Paperclip, Plus, ScrollText, Trash2, Users, X } from 'lucide-vue-next';
 import { onBeforeUnmount, ref } from 'vue';
 
 interface Journal {
@@ -39,6 +39,8 @@ const formattedDeadline = new Date(props.submissionDeadline).toLocaleString('id-
 });
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Unggah Artikel', href: '#' }];
+
+const templateUrl = encodeURI('/template/Template full paper SNOS 2026.pdf');
 
 const inputClass =
     'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
@@ -132,7 +134,13 @@ function submit() {
                 icon-class="bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-400"
                 :title="`Unggah Artikel — ${registration.registration_number}`"
                 description="Lengkapi data artikel, unggah berkas PDF, dan periksa pratinjaunya sebelum dikirim ke panitia."
-            />
+            >
+                <template #actions>
+                    <a :href="templateUrl" download>
+                        <Button type="button" variant="outline" class="gap-2"><Download class="size-4" /> Download Template Jurnal</Button>
+                    </a>
+                </template>
+            </PageHeader>
 
             <div
                 :class="[
