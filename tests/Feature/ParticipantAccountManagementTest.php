@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 test('an admin can create a participant account', function () {
     $admin = User::factory()->create();
@@ -134,6 +135,46 @@ test('an admin cannot manage a user account that is not a participant through th
     $destroyResponse->assertNotFound();
 
     expect(User::find($reviewer->id))->not->toBeNull();
+});
+
+test('an admin can export participant accounts to an Excel file', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $participant = User::factory()->create([
+        'name' => 'Peserta Ekspor',
+        'email' => 'ekspor@snos.test',
+        'nik' => '3209999999999999',
+        'institution' => 'Universitas Ekspor',
+        'whatsapp_number' => '081299999999',
+    ]);
+    $participant->assignRole('peserta');
+
+    $response = $this->actingAs($admin)->get('/admin/participant-accounts/export');
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect($response->headers->get('Content-Disposition'))->toContain('.xlsx');
+
+    // Actually parse the streamed workbook to confirm the data is really there,
+    // not just that some file with the right headers came back.
+    $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx');
+    file_put_contents($tmpFile, $response->streamedContent());
+    $sheet = IOFactory::load($tmpFile)->getActiveSheet();
+    unlink($tmpFile);
+
+    expect($sheet->getCell('B1')->getValue())->toBe('Nama');
+    expect($sheet->getCell('C1')->getValue())->toBe('Email');
+
+    $rows = $sheet->toArray();
+    $emails = array_column($rows, 2);
+    expect($emails)->toContain('ekspor@snos.test');
+});
+
+test('a non-admin cannot export participant accounts', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->get('/admin/participant-accounts/export')->assertForbidden();
 });
 
 test('a non-admin cannot manage participant accounts', function () {

@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
         Route::get('participants/{registration}', [AdminParticipantController::class, 'show'])->name('participants.show');
 
         Route::get('participant-accounts', [ParticipantAccountController::class, 'index'])->name('participant-accounts.index');
+        Route::get('participant-accounts/export', [ParticipantAccountController::class, 'export'])->name('participant-accounts.export');
         Route::get('participant-accounts/create', [ParticipantAccountController::class, 'create'])->name('participant-accounts.create');
         Route::post('participant-accounts', [ParticipantAccountController::class, 'store'])->name('participant-accounts.store');
         Route::get('participant-accounts/{participantAccount}/edit', [ParticipantAccountController::class, 'edit'])->name('participant-accounts.edit');

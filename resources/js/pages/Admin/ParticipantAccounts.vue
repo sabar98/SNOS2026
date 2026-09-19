@@ -9,7 +9,7 @@ import { useInitials } from '@/composables/useInitials';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { IdCard, Pencil, Search, Trash2, UserPlus } from 'lucide-vue-next';
+import { FileSpreadsheet, IdCard, Pencil, Search, Trash2, UserPlus } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface ParticipantAccount {
@@ -68,6 +68,9 @@ function destroy(participant: ParticipantAccount) {
                 description="Kelola akun login peserta yang mendaftar sendiri melalui halaman registrasi."
             >
                 <template #actions>
+                    <a :href="route('admin.participant-accounts.export')">
+                        <Button variant="outline" class="gap-2"><FileSpreadsheet class="size-4" /> Export Excel</Button>
+                    </a>
                     <Link :href="route('admin.participant-accounts.create')">
                         <Button class="gap-2"><UserPlus class="size-4" /> Tambah Akun</Button>
                     </Link>

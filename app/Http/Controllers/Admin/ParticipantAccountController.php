@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ParticipantAccountExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ParticipantAccountController extends Controller
 {
@@ -27,6 +29,22 @@ class ParticipantAccountController extends Controller
     public function create(): Response
     {
         return Inertia::render('Admin/ParticipantAccountForm');
+    }
+
+    public function export(ParticipantAccountExporter $exporter): StreamedResponse
+    {
+        $participants = User::role('peserta')
+            ->withCount('eventRegistrations')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'nik', 'institution', 'whatsapp_number']);
+
+        $filename = 'akun-peserta-'.now()->format('Y-m-d').'.xlsx';
+
+        return response()->streamDownload(function () use ($exporter, $participants) {
+            $exporter->writeTo($participants)->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
