@@ -53,6 +53,16 @@ class EventRegistration extends Model
      */
     public function isFeeLocked(): bool
     {
+        return $this->hasVerifiedRegistrationPayment();
+    }
+
+    /**
+     * Whether the registration fee has actually been paid and verified by the
+     * panitia. Article submission (and anything else gated on "has paid") should
+     * check this — not the loosely-related `status` column, which can drift.
+     */
+    public function hasVerifiedRegistrationPayment(): bool
+    {
         return $this->payments()->where('type', 'registrasi')->where('status', 'terverifikasi')->exists();
     }
 

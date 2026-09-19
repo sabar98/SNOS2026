@@ -7,15 +7,26 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
-function makePresenterRegistration(?User $user = null): EventRegistration
+function makePresenterRegistration(?User $user = null, bool $paymentVerified = true): EventRegistration
 {
     $user ??= User::factory()->create();
     $user->assignRole('peserta');
 
-    return EventRegistration::factory()->for($user, 'user')->create([
+    $registration = EventRegistration::factory()->for($user, 'user')->create([
         'participant_type' => 'presenter_luring',
-        'status' => 'pembayaran_terverifikasi',
+        'status' => $paymentVerified ? 'pembayaran_terverifikasi' : 'menunggu_verifikasi',
     ]);
+
+    if ($paymentVerified) {
+        $registration->payments()->create([
+            'type' => 'registrasi',
+            'amount' => 750000,
+            'payment_code' => 'PAY-TEST-'.$registration->id,
+            'status' => 'terverifikasi',
+        ]);
+    }
+
+    return $registration;
 }
 
 test('a presenter can submit an article once payment is verified', function () {
@@ -65,8 +76,7 @@ test('a presenter cannot submit an article after the submission deadline has pas
 });
 
 test('a presenter cannot submit an article before payment is verified', function () {
-    $registration = makePresenterRegistration();
-    $registration->update(['status' => 'menunggu_verifikasi']);
+    $registration = makePresenterRegistration(paymentVerified: false);
 
     $response = $this->actingAs($registration->user)->post("/participant/registrations/{$registration->id}/articles", [
         'title' => 'Judul',
@@ -80,6 +90,44 @@ test('a presenter cannot submit an article before payment is verified', function
 
     $response->assertForbidden();
     expect(Article::where('event_registration_id', $registration->id)->count())->toBe(0);
+});
+
+test('a stale registration status of pembayaran_terverifikasi with no actual verified payment still blocks article submission', function () {
+    // Regression test for the real bug reported: uploads were allowed without
+    // payment because the gate (once added) must check the actual Payment
+    // record, not the `status` column alone — status can say "verified" while
+    // no payment was ever actually confirmed.
+    $registration = makePresenterRegistration(paymentVerified: false);
+    $registration->update(['status' => 'pembayaran_terverifikasi']);
+
+    $response = $this->actingAs($registration->user)->post("/participant/registrations/{$registration->id}/articles", [
+        'title' => 'Judul',
+        'abstract' => 'Abstrak',
+        'keywords' => 'kata kunci',
+        'field' => 'Teknologi Informasi',
+        'file' => UploadedFile::fake()->create('artikel.pdf', 200, 'application/pdf'),
+        'statement_letter' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
+        'authors' => [['name' => 'A', 'email' => 'a@example.com']],
+    ]);
+
+    $response->assertForbidden();
+    expect(Article::where('event_registration_id', $registration->id)->count())->toBe(0);
+});
+
+test('the article upload page tells the frontend when payment has not been verified yet', function () {
+    $registration = makePresenterRegistration(paymentVerified: false);
+
+    $this->actingAs($registration->user)
+        ->get("/participant/registrations/{$registration->id}/articles/create")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('paymentVerified', false));
+
+    $verified = makePresenterRegistration();
+
+    $this->actingAs($verified->user)
+        ->get("/participant/registrations/{$verified->id}/articles/create")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('paymentVerified', true));
 });
 
 test('an admin can approve an article for review', function () {

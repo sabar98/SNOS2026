@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { AlertTriangle, CheckCircle2, Download, FileText, FileUp, Paperclip, Plus, ScrollText, Trash2, Users, X } from 'lucide-vue-next';
+import { AlertTriangle, CheckCircle2, Download, FileText, FileUp, Lock, Paperclip, Plus, ScrollText, Trash2, Users, X } from 'lucide-vue-next';
 import { onBeforeUnmount, ref } from 'vue';
 
 interface Journal {
@@ -28,6 +28,7 @@ const props = defineProps<{
     journals: Journal[];
     submissionDeadline: string;
     deadlinePassed: boolean;
+    paymentVerified: boolean;
 }>();
 
 const formattedDeadline = new Date(props.submissionDeadline).toLocaleString('id-ID', {
@@ -157,12 +158,32 @@ function submit() {
                 </p>
             </div>
 
+            <div
+                v-if="!paymentVerified && !deadlinePassed"
+                class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+            >
+                <Lock class="mt-0.5 size-4 shrink-0" />
+                <p>
+                    Pembayaran registrasi Anda belum diverifikasi oleh panitia. Unggah artikel baru bisa dilakukan setelah pembayaran
+                    terverifikasi.
+                </p>
+            </div>
+
             <div v-if="deadlinePassed" class="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
                 Batas waktu pengumpulan artikel sudah lewat. Hubungi panitia jika Anda memerlukan kelonggaran waktu.
             </div>
+
+            <div v-else-if="!paymentVerified" class="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
+                Formulir unggah artikel akan tersedia setelah pembayaran registrasi Anda diverifikasi oleh panitia.
+                <div class="mt-4">
+                    <Link :href="route('participant.registrations.show', registration.id)">
+                        <Button type="button" variant="outline">Lihat Detail Pendaftaran</Button>
+                    </Link>
+                </div>
+            </div>
         </div>
 
-        <form v-if="!deadlinePassed" class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-0" @submit.prevent="submit">
+        <form v-if="!deadlinePassed && paymentVerified" class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-0" @submit.prevent="submit">
             <Card class="border-violet-100 bg-violet-50 dark:border-border dark:bg-violet-950/40">
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2 text-base">
