@@ -172,15 +172,9 @@ function formatRupiah(value: string): string {
                         </div>
                     </div>
 
-                    <Link
-                        v-if="registration.status === 'pembayaran_terverifikasi' && registration.articles.length === 0"
-                        :href="route('participant.articles.create', registration.id)"
-                    >
+                    <Link v-if="registration.articles.length === 0" :href="route('participant.articles.create', registration.id)">
                         <Button size="sm">Unggah Artikel</Button>
                     </Link>
-                    <p v-else-if="registration.articles.length === 0" class="text-muted-foreground">
-                        Artikel dapat diunggah setelah pembayaran terverifikasi.
-                    </p>
                 </CardContent>
             </Card>
         </div>

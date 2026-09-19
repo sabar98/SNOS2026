@@ -24,7 +24,6 @@ class ArticleController extends Controller
             'journals' => Journal::query()->where('is_active', true)->orderBy('name')->get(),
             'submissionDeadline' => config('seminar.article_submission_deadline'),
             'deadlinePassed' => now()->greaterThan(Carbon::parse(config('seminar.article_submission_deadline'))),
-            'paymentVerified' => $registration->hasVerifiedRegistrationPayment(),
         ]);
     }
 
@@ -34,12 +33,6 @@ class ArticleController extends Controller
             now()->greaterThan(Carbon::parse(config('seminar.article_submission_deadline'))),
             422,
             'Batas waktu pengumpulan artikel telah berakhir.',
-        );
-
-        abort_unless(
-            $registration->hasVerifiedRegistrationPayment(),
-            403,
-            'Pembayaran registrasi Anda belum diverifikasi. Artikel tidak dapat diunggah sebelum pembayaran diverifikasi oleh panitia.',
         );
 
         $validated = $request->validated();

@@ -12,8 +12,10 @@ class StoreArticleRequest extends FormRequest
         /** @var EventRegistration $registration */
         $registration = $this->route('registration');
 
-        return $this->user()->can('update', $registration)
-            && ($registration->status === 'pembayaran_terverifikasi' || $registration->articles()->exists());
+        // Article submission is not gated on payment status — a participant may
+        // upload their article regardless of whether the registration fee has
+        // been paid or verified yet. Ownership is still required.
+        return $this->user()->can('update', $registration);
     }
 
     /**
