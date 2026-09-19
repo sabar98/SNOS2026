@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { articleStatusLabels, articleStatusVariants, reviewerAssignmentStatusLabels, reviewerAssignmentStatusVariants } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { FileText } from 'lucide-vue-next';
+import { Download, FileText, ScrollText } from 'lucide-vue-next';
 
 interface ReviewerAssignment {
     id: number;
@@ -37,6 +37,8 @@ interface Article {
     status: string;
     similarity_score: string | null;
     admin_notes: string | null;
+    file_path: string | null;
+    statement_letter_path: string | null;
     event_registration: { user: { name: string; email: string } };
     authors: { name: string; email: string }[];
     reviewer_assignments: ReviewerAssignment[];
@@ -97,6 +99,33 @@ function issueLoa() {
                         </a>
                     </p>
                     <Button v-else size="sm" @click="issueLoa">Terbitkan Letter of Acceptance</Button>
+                </CardContent>
+            </Card>
+
+            <Card class="overflow-hidden border-sky-100 bg-sky-50 dark:border-border dark:bg-sky-950/40">
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                    <CardTitle class="flex items-center gap-2 text-base">
+                        <FileText class="size-4 text-sky-700 dark:text-sky-400" /> Berkas Artikel (PDF)
+                    </CardTitle>
+                    <div class="flex items-center gap-2">
+                        <a v-if="article.statement_letter_path" :href="`/storage/${article.statement_letter_path}`" download>
+                            <Button variant="outline" size="sm" class="gap-1.5">
+                                <ScrollText class="size-3.5" /> Unduh Surat Pernyataan
+                            </Button>
+                        </a>
+                        <a v-if="article.file_path" :href="`/storage/${article.file_path}`" download>
+                            <Button variant="outline" size="sm" class="gap-1.5"><Download class="size-3.5" /> Unduh Artikel</Button>
+                        </a>
+                    </div>
+                </CardHeader>
+                <CardContent class="p-0">
+                    <div v-if="article.file_path" class="overflow-hidden rounded-b-xl border-t bg-background">
+                        <iframe :src="`/storage/${article.file_path}`" class="h-[560px] w-full" title="Berkas artikel PDF peserta"></iframe>
+                    </div>
+                    <div v-else class="flex flex-col items-center justify-center gap-2 border-t px-6 py-16 text-center text-muted-foreground">
+                        <FileText class="size-8" />
+                        <p class="text-sm">Belum ada berkas PDF yang tersimpan untuk artikel ini.</p>
+                    </div>
                 </CardContent>
             </Card>
 

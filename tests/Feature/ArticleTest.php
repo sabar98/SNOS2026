@@ -105,6 +105,24 @@ test('the article upload page and form are accessible regardless of payment stat
         ->assertInertia(fn ($page) => $page->component('Participant/ArticleCreate'));
 });
 
+test('an admin can see and download the article file and statement letter a participant uploaded', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $registration = makePresenterRegistration();
+    $article = Article::factory()->for($registration, 'eventRegistration')->create([
+        'status' => 'diajukan',
+        'file_path' => 'articles/artikel-peserta.pdf',
+        'statement_letter_path' => 'article-statements/surat-peserta.pdf',
+    ]);
+
+    $this->actingAs($admin)->get("/admin/articles/{$article->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('article.file_path', 'articles/artikel-peserta.pdf')
+            ->where('article.statement_letter_path', 'article-statements/surat-peserta.pdf')
+        );
+});
+
 test('an admin can approve an article for review', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
