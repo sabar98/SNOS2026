@@ -23,7 +23,7 @@ return [
         ['label' => 'Batas Akhir Revisi', 'date' => '1 November 2026'],
         ['label' => 'Pelaksanaan Seminar', 'date' => '12-13 November 2026'],
     ],
-    'article_submission_deadline' => '2026-10-01 23:59:59',
+    'article_submission_deadline' => '2026-10-20 23:59:59',
     'presentation_material_deadline' => '2026-11-10 23:59:59',
     'certificate_signer' => [
         'name' => 'Prof. Dr. Ketua Panitia, M.T.',
