@@ -108,9 +108,9 @@ test('an admin rejecting a payment requires notes and does not advance the regis
     expect($registration->status)->toBe('menunggu_verifikasi');
 });
 
-test('the admin payment list shows the participant name for both registration and publication fees', function () {
+test('the admin payment list shows the participant name and email for both registration and publication fees', function () {
     $admin = makeAdmin();
-    $participant = User::factory()->create(['name' => 'Peserta Pembayaran Uji']);
+    $participant = User::factory()->create(['name' => 'Peserta Pembayaran Uji', 'email' => 'pembayaran.uji@snos.test']);
     $participant->assignRole('peserta');
     $registration = EventRegistration::factory()->for($participant, 'user')->create();
     $registrationPayment = $registration->payments()->create([
@@ -129,9 +129,13 @@ test('the admin payment list shows the participant name for both registration an
 
     $this->actingAs($admin)->get('/admin/payments')->assertOk()->assertInertia(fn ($page) => $page
         ->where('payments.data.0.participant_name', 'Peserta Pembayaran Uji')
+        ->where('payments.data.0.participant_email', 'pembayaran.uji@snos.test')
         ->where('payments.data.1.participant_name', 'Peserta Pembayaran Uji')
+        ->where('payments.data.1.participant_email', 'pembayaran.uji@snos.test')
     );
 
     expect($registrationPayment->fresh()->participant_name)->toBe('Peserta Pembayaran Uji');
+    expect($registrationPayment->fresh()->participant_email)->toBe('pembayaran.uji@snos.test');
     expect($publicationPayment->fresh()->participant_name)->toBe('Peserta Pembayaran Uji');
+    expect($publicationPayment->fresh()->participant_email)->toBe('pembayaran.uji@snos.test');
 });

@@ -19,7 +19,7 @@ class Payment extends Model
      * included wherever a Payment is serialized (admin payment lists, etc.)
      * without every caller having to remember to eager-load and derive it.
      */
-    protected $appends = ['participant_name'];
+    protected $appends = ['participant_name', 'participant_email'];
 
     protected $fillable = [
         'payable_type',
@@ -52,26 +52,34 @@ class Payment extends Model
     }
 
     /**
-     * The name of the participant this payment belongs to, regardless of
-     * whether it's a registration fee (payable = EventRegistration, whose
-     * owner is directly on it) or a publication fee (payable = Article,
-     * whose owner is one hop further via its EventRegistration).
+     * The participant this payment belongs to, regardless of whether it's a
+     * registration fee (payable = EventRegistration, whose owner is directly
+     * on it) or a publication fee (payable = Article, whose owner is one hop
+     * further via its EventRegistration).
      */
+    public function participant(): ?User
+    {
+        $payable = $this->payable;
+
+        if ($payable instanceof EventRegistration) {
+            return $payable->user;
+        }
+
+        if ($payable instanceof Article) {
+            return $payable->eventRegistration?->user;
+        }
+
+        return null;
+    }
+
     protected function participantName(): Attribute
     {
-        return Attribute::get(function () {
-            $payable = $this->payable;
+        return Attribute::get(fn () => $this->participant()?->name);
+    }
 
-            if ($payable instanceof EventRegistration) {
-                return $payable->user?->name;
-            }
-
-            if ($payable instanceof Article) {
-                return $payable->eventRegistration?->user?->name;
-            }
-
-            return null;
-        });
+    protected function participantEmail(): Attribute
+    {
+        return Attribute::get(fn () => $this->participant()?->email);
     }
 
     public function bankAccount(): BelongsTo

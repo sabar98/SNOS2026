@@ -18,6 +18,7 @@ interface Payment {
     status: string;
     proof_file_path: string | null;
     participant_name: string | null;
+    participant_email: string | null;
     payable: { registration_number?: string; title?: string } | null;
 }
 
@@ -92,7 +93,12 @@ function reject(paymentId: number) {
                                     class="border-b transition-colors last:border-0 hover:bg-muted/40"
                                 >
                                     <td class="py-2">{{ payment.payable?.registration_number ?? payment.payable?.title ?? '-' }}</td>
-                                    <td>{{ payment.participant_name ?? '-' }}</td>
+                                    <td>
+                                        <div>{{ payment.participant_name ?? '-' }}</div>
+                                        <div v-if="payment.participant_email" class="text-xs text-muted-foreground">
+                                            {{ payment.participant_email }}
+                                        </div>
+                                    </td>
                                     <td>{{ paymentTypeLabels[payment.type] ?? payment.type }}</td>
                                     <td>Rp{{ Number(payment.amount).toLocaleString('id-ID') }}</td>
                                     <td>
