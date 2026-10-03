@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Article;
 use App\Models\EventRegistration;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -105,4 +106,32 @@ test('an admin rejecting a payment requires notes and does not advance the regis
     expect($payment->status)->toBe('perlu_perbaikan');
     expect($payment->notes)->toBe('Nominal tidak sesuai.');
     expect($registration->status)->toBe('menunggu_verifikasi');
+});
+
+test('the admin payment list shows the participant name for both registration and publication fees', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create(['name' => 'Peserta Pembayaran Uji']);
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create();
+    $registrationPayment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-REGTEST',
+        'status' => 'belum_bayar',
+    ]);
+    $article = Article::factory()->for($registration, 'eventRegistration')->create();
+    $publicationPayment = $article->payments()->create([
+        'type' => 'publikasi',
+        'amount' => 300000,
+        'payment_code' => 'PAY-PUBTEST',
+        'status' => 'belum_bayar',
+    ]);
+
+    $this->actingAs($admin)->get('/admin/payments')->assertOk()->assertInertia(fn ($page) => $page
+        ->where('payments.data.0.participant_name', 'Peserta Pembayaran Uji')
+        ->where('payments.data.1.participant_name', 'Peserta Pembayaran Uji')
+    );
+
+    expect($registrationPayment->fresh()->participant_name)->toBe('Peserta Pembayaran Uji');
+    expect($publicationPayment->fresh()->participant_name)->toBe('Peserta Pembayaran Uji');
 });

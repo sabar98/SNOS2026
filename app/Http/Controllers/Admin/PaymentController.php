@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Article;
+use App\Models\EventRegistration;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +16,12 @@ class PaymentController extends Controller
 {
     public function index(): Response
     {
-        $payments = Payment::with('payable')
+        $payments = Payment::with(['payable' => function ($morphTo) {
+            $morphTo->morphWith([
+                EventRegistration::class => ['user'],
+                Article::class => ['eventRegistration.user'],
+            ]);
+        }])
             ->latest()
             ->paginate(20)
             ->withQueryString();
