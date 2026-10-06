@@ -164,7 +164,8 @@ test('the LoA PDF blade view renders the uploaded signature image only, with no 
         'journalName' => null,
         'signerName' => 'Dr. Contoh',
         'signerTitle' => 'Ketua Panitia',
-        'letterheadBase64' => base64_encode('fake-letterhead-bytes'),
+        'logoBase64' => null,
+        'logoMime' => null,
     ];
 
     $withSignature = view('loa.pdf', $sharedData + [
@@ -188,6 +189,35 @@ test('the LoA PDF blade view renders the uploaded signature image only, with no 
     expect($withoutSignature)->not->toContain('class="signature-mark"');
 });
 
+test('the LoA kop is built in HTML with the panitia text and only embeds the landing page logo when there is one', function () {
+    $sharedData = [
+        'loa' => new LetterOfAcceptance(['loa_number' => 'LOA-KOP-1', 'issued_at' => now()]),
+        'article' => Article::factory()->make(['title' => 'Judul Kop', 'article_number' => 'ART-KOP-1']),
+        'seminarName' => 'SNOS 2026',
+        'participantName' => 'Nama Kop',
+        'journalName' => null,
+        'signerName' => 'Dr. Kop',
+        'signerTitle' => 'Ketua',
+        'signatureBase64' => null,
+        'signatureMime' => null,
+    ];
+
+    $withoutLogo = view('loa.pdf', $sharedData + ['logoBase64' => null, 'logoMime' => null])->render();
+
+    expect($withoutLogo)->toContain('class="kop"');
+    expect($withoutLogo)->toContain('PANITIA PELAKSANA');
+    expect($withoutLogo)->toContain('SEMINAR NASIONAL');
+    expect($withoutLogo)->toContain('OMNI SCIENTIA (SNOS) 2026');
+    expect($withoutLogo)->toContain('LLDIKTI WILAYAH XIII');
+    expect($withoutLogo)->toContain('Jalan Alue Naga, Desa Tibang, Kec. Syiah Kuala, Kota Banda Aceh 23114');
+    expect($withoutLogo)->not->toContain('class="kop-logo"');
+
+    $withLogo = view('loa.pdf', $sharedData + ['logoBase64' => base64_encode('fake-logo-bytes'), 'logoMime' => 'image/png'])->render();
+
+    expect($withLogo)->toContain('class="kop-logo"');
+    expect($withLogo)->toContain('data:image/png;base64,');
+});
+
 test('the LoA PDF blade view prints the saved signer name and title under the signature', function () {
     $html = view('loa.pdf', [
         'loa' => new LetterOfAcceptance(['loa_number' => 'LOA-TEST-3', 'issued_at' => now()]),
@@ -199,7 +229,8 @@ test('the LoA PDF blade view prints the saved signer name and title under the si
         'signerTitle' => 'Ketua Panitia Tersimpan',
         'signatureBase64' => null,
         'signatureMime' => null,
-        'letterheadBase64' => base64_encode('fake-letterhead-bytes'),
+        'logoBase64' => null,
+        'logoMime' => null,
     ])->render();
 
     expect($html)->toContain('Prof. Dr. Pimpinan Tersimpan');

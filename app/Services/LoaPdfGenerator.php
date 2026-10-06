@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LandingSetting;
 use App\Models\LetterOfAcceptance;
 use App\Models\LoaSetting;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -25,9 +26,20 @@ class LoaPdfGenerator
             $signatureMime = Storage::disk('public')->mimeType($signaturePath);
         }
 
-        // Bundled with the app (not admin-uploadable) — the panitia's official kop surat.
-        $letterheadFile = resource_path('images/loa-letterhead.png');
-        $letterheadBase64 = base64_encode(file_get_contents($letterheadFile));
+        // The kop is built in HTML/CSS; only its logo is taken from the landing page branding.
+        // DomPDF can only embed png/jpeg/gif, so any other upload is left out of the kop.
+        $logoBase64 = null;
+        $logoMime = null;
+        $logoPath = LandingSetting::current()->site_logo_path;
+
+        if ($logoPath && Storage::disk('public')->exists($logoPath)) {
+            $mime = Storage::disk('public')->mimeType($logoPath);
+
+            if (in_array($mime, ['image/png', 'image/jpeg', 'image/gif'], true)) {
+                $logoBase64 = base64_encode(Storage::disk('public')->get($logoPath));
+                $logoMime = $mime;
+            }
+        }
 
         $pdf = Pdf::loadView('loa.pdf', [
             'loa' => $loa,
@@ -40,7 +52,8 @@ class LoaPdfGenerator
             'signerTitle' => $setting->signer_title ?: config('seminar.certificate_signer.title'),
             'signatureBase64' => $signatureBase64,
             'signatureMime' => $signatureMime,
-            'letterheadBase64' => $letterheadBase64,
+            'logoBase64' => $logoBase64,
+            'logoMime' => $logoMime,
         ])->setPaper('a4', 'portrait');
 
         $path = "loa/{$loa->loa_number}.pdf";

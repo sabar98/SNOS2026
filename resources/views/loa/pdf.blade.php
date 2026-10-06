@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <title>Letter of Acceptance {{ $loa->loa_number }}</title>
     <style>
-        /* Top and sides are zero so the kop spans the full A4 width like the paper's own letterhead. */
         @page {
             margin: 0 0 20mm 0;
         }
@@ -15,18 +14,79 @@
             font-size: 13px;
             line-height: 1.6;
         }
-        /* 894x191 source image: 210mm wide => 44.9mm tall, so it is never stretched. */
-        .letterhead {
-            width: 210mm;
-            height: 45mm;
-        }
-        .letterhead img {
-            width: 210mm;
-            height: 45mm;
-            display: block;
-        }
         .content {
             padding: 0 25mm;
+        }
+
+        /* Kop surat, built in HTML/CSS. Colours follow the panitia's official letterhead. */
+        .kop {
+            padding: 10mm 25mm 0 25mm;
+        }
+        .kop-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .kop-table td {
+            vertical-align: middle;
+            padding: 0;
+        }
+        .kop-logo-cell {
+            width: 34mm;
+            padding-right: 5mm !important;
+            border-right: 0.6px dotted #8a8a8a;
+        }
+        .kop-logo {
+            width: 26mm;
+            height: 26mm;
+        }
+        .kop-text-cell {
+            padding-left: 5mm !important;
+            border-right: 0.6px dotted #8a8a8a;
+            padding-right: 5mm !important;
+        }
+        .kop-panitia {
+            color: #f2a51a;
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 9.5px;
+            font-weight: bold;
+            letter-spacing: 0.4px;
+        }
+        .kop-title {
+            color: #0c5a9c;
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 17px;
+            font-weight: bold;
+            line-height: 1.15;
+        }
+        .kop-title-small {
+            font-size: 14px;
+        }
+        .kop-lldikti {
+            color: #0c5a9c;
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 1px;
+        }
+        .kop-address {
+            text-align: center;
+            font-family: 'Times', serif;
+            font-size: 9.5px;
+            line-height: 1.3;
+            margin-top: 3mm;
+        }
+        .kop-address span {
+            text-decoration: underline;
+        }
+        .kop-rule-thick {
+            height: 1.6mm;
+            background: #0c5a9c;
+            margin-top: 2.5mm;
+        }
+        .kop-rule-thin {
+            height: 0.5mm;
+            background: #7fb2dd;
+            margin-top: 0.8mm;
         }
         .title {
             text-align: center;
@@ -87,8 +147,30 @@
     </style>
 </head>
 <body>
-    <div class="letterhead">
-        <img src="data:image/png;base64,{{ $letterheadBase64 }}" alt="Kop Surat {{ $seminarName }}">
+    <div class="kop">
+        <table class="kop-table">
+            <tr>
+                <td class="kop-logo-cell">
+                    @if($logoBase64)
+                        <img class="kop-logo" style="width: 26mm; height: 26mm;" src="data:{{ $logoMime }};base64,{{ $logoBase64 }}" alt="Logo {{ $seminarName }}">
+                    @endif
+                </td>
+                <td class="kop-text-cell">
+                    <div class="kop-panitia">PANITIA PELAKSANA</div>
+                    <div class="kop-title">SEMINAR NASIONAL</div>
+                    <div class="kop-title kop-title-small">OMNI SCIENTIA (SNOS) 2026</div>
+                    <div class="kop-lldikti">LLDIKTI WILAYAH XIII</div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="kop-address">
+            <span>Sekretariat</span>: Jalan Alue Naga, Desa Tibang, Kec. Syiah Kuala, Kota Banda Aceh 23114<br>
+            Telp. (0651) <span>31130</span> | Email: info.lldikti13@kemdiktisaintek.go.id | Website: semnas.serambimekkah.ac.id
+        </div>
+
+        <div class="kop-rule-thick"></div>
+        <div class="kop-rule-thin"></div>
     </div>
 
     <div class="content">
