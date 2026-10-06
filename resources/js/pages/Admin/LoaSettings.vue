@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { FileSignature, PenTool } from 'lucide-vue-next';
+import { FileSignature, PenTool, RefreshCw } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 interface LoaSetting {
@@ -18,6 +18,7 @@ interface LoaSetting {
 
 const props = defineProps<{
     setting: LoaSetting;
+    issuedCount: number;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Tanda Tangan LoA', href: '/admin/loa-settings' }];
@@ -45,6 +46,13 @@ function save() {
             }
         },
     });
+}
+
+function regenerate() {
+    if (!confirm(`Perbarui PDF untuk ${props.issuedCount} LoA yang sudah terbit? Nomor dan tanggal terbit tidak berubah, hanya kop surat, nama, dan tanda tangan yang diperbarui.`)) {
+        return;
+    }
+    router.post(route('admin.loa-settings.regenerate'), {}, { preserveScroll: true });
 }
 
 function remove() {
@@ -125,6 +133,21 @@ function remove() {
 
                         <Button type="submit" size="sm" class="w-fit" :disabled="form.processing || !form.signer_name.trim()">Simpan</Button>
                     </form>
+                </CardContent>
+            </Card>
+
+            <Card class="border-violet-100 bg-violet-50 dark:border-border dark:bg-violet-950/40">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2"><RefreshCw class="size-4 text-muted-foreground" /> Perbarui LoA yang Sudah Terbit</CardTitle>
+                </CardHeader>
+                <CardContent class="grid gap-3">
+                    <p class="text-sm text-muted-foreground">
+                        LoA yang sudah terbit tetap memakai kop, nama, dan tanda tangan lama sampai PDF-nya diperbarui. Nomor dan tanggal terbit tidak
+                        berubah.
+                    </p>
+                    <Button variant="outline" size="sm" class="w-fit" :disabled="issuedCount === 0" @click="regenerate">
+                        Perbarui PDF {{ issuedCount }} LoA
+                    </Button>
                 </CardContent>
             </Card>
         </div>

@@ -206,6 +206,39 @@ test('the LoA PDF blade view prints the saved signer name and title under the si
     expect($html)->toContain('Ketua Panitia Tersimpan');
 });
 
+test('regenerating issued LoA PDFs picks up the new signer name without changing the LoA number', function () {
+    Storage::fake('public');
+    $admin = makeLoaSettingsAdmin();
+    $article = makeReviewedArticleForLoaSignature();
+    $this->actingAs($admin)->post("/admin/articles/{$article->id}/loa");
+
+    $loa = $article->refresh()->letterOfAcceptance;
+    $loaNumber = $loa->loa_number;
+    $issuedAt = $loa->issued_at->toIso8601String();
+    $oldPdf = Storage::disk('public')->get($loa->file_path);
+
+    $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Baru Untuk Regenerate',
+        'signer_title' => 'Ketua Baru',
+    ]);
+
+    $response = $this->actingAs($admin)->post('/admin/loa-settings/regenerate');
+
+    $response->assertRedirect();
+    $response->assertSessionHas('status', 'loa-regenerated:1');
+    $loa->refresh();
+    expect($loa->loa_number)->toBe($loaNumber);
+    expect($loa->issued_at->toIso8601String())->toBe($issuedAt);
+    expect(Storage::disk('public')->get($loa->file_path))->not->toBe($oldPdf);
+});
+
+test('a non-admin cannot regenerate issued LoA PDFs', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->post('/admin/loa-settings/regenerate')->assertForbidden();
+});
+
 test('issuing a LoA after uploading a signature still produces a valid stored PDF', function () {
     Storage::fake('public');
     $admin = makeLoaSettingsAdmin();

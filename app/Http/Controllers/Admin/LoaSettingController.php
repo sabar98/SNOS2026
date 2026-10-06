@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LetterOfAcceptance;
 use App\Models\LoaSetting;
+use App\Services\LoaPdfGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +18,29 @@ class LoaSettingController extends Controller
     {
         return Inertia::render('Admin/LoaSettings', [
             'setting' => LoaSetting::current(),
+            'issuedCount' => LetterOfAcceptance::query()->whereNotNull('file_path')->count(),
         ]);
+    }
+
+    /**
+     * Re-renders the stored PDF of every LoA that was already issued, so kop surat,
+     * signer name and signature changes reach documents that were issued earlier.
+     * The loa_number and issued_at are left untouched.
+     */
+    public function regenerate(LoaPdfGenerator $loaPdfGenerator): RedirectResponse
+    {
+        $count = 0;
+
+        LetterOfAcceptance::query()
+            ->whereNotNull('file_path')
+            ->chunkById(50, function ($letters) use ($loaPdfGenerator, &$count) {
+                foreach ($letters as $loa) {
+                    $loaPdfGenerator->generate($loa);
+                    $count++;
+                }
+            });
+
+        return back()->with('status', 'loa-regenerated:'.$count);
     }
 
     public function update(Request $request): RedirectResponse

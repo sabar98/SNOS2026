@@ -183,6 +183,7 @@ Route::middleware('auth')->group(function () {
         Route::get('loa-settings', [LoaSettingController::class, 'edit'])->name('loa-settings.edit');
         Route::post('loa-settings', [LoaSettingController::class, 'update'])->name('loa-settings.update');
         Route::delete('loa-settings', [LoaSettingController::class, 'destroy'])->name('loa-settings.destroy');
+        Route::post('loa-settings/regenerate', [LoaSettingController::class, 'regenerate'])->name('loa-settings.regenerate');
 
         Route::get('announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
         Route::post('announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
