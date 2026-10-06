@@ -22,20 +22,29 @@ class LoaSettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'signature' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
+            'signer_name' => ['required', 'string', 'max:255'],
+            'signer_title' => ['nullable', 'string', 'max:255'],
+            'signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
         ]);
 
         $setting = LoaSetting::current();
 
-        if ($setting->signature_path) {
-            Storage::disk('public')->delete($setting->signature_path);
+        $setting->fill([
+            'signer_name' => $validated['signer_name'],
+            'signer_title' => $validated['signer_title'] ?? null,
+        ]);
+
+        if ($request->hasFile('signature')) {
+            if ($setting->signature_path) {
+                Storage::disk('public')->delete($setting->signature_path);
+            }
+
+            $setting->signature_path = $request->file('signature')->store('loa-signatures', 'public');
         }
 
-        $path = $request->file('signature')->store('loa-signatures', 'public');
+        $setting->save();
 
-        $setting->update(['signature_path' => $path]);
-
-        return back()->with('status', 'loa-signature-saved');
+        return back()->with('status', 'loa-settings-saved');
     }
 
     public function destroy(): RedirectResponse

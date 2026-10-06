@@ -8,6 +8,8 @@ class LoaSetting extends Model
 {
     protected $fillable = [
         'signature_path',
+        'signer_name',
+        'signer_title',
     ];
 
     /**

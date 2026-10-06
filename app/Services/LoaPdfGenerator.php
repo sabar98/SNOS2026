@@ -15,7 +15,8 @@ class LoaPdfGenerator
 
         $article = $loa->article;
 
-        $signaturePath = LoaSetting::current()->signature_path;
+        $setting = LoaSetting::current();
+        $signaturePath = $setting->signature_path;
         $signatureBase64 = null;
         $signatureMime = null;
 
@@ -34,8 +35,9 @@ class LoaPdfGenerator
             'seminarName' => config('seminar.name'),
             'participantName' => $article->eventRegistration->user->name,
             'journalName' => $article->journal?->name,
-            'signerName' => config('seminar.certificate_signer.name'),
-            'signerTitle' => config('seminar.certificate_signer.title'),
+            // Values from the LoA settings page win; config is only the fallback until they're filled in.
+            'signerName' => $setting->signer_name ?: config('seminar.certificate_signer.name'),
+            'signerTitle' => $setting->signer_title ?: config('seminar.certificate_signer.title'),
             'signatureBase64' => $signatureBase64,
             'signatureMime' => $signatureMime,
             'letterheadBase64' => $letterheadBase64,

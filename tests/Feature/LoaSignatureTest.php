@@ -21,9 +21,16 @@ function makeReviewedArticleForLoaSignature(): Article
     ]);
 }
 
-test('an admin can view the LoA signature page', function () {
+function makeLoaSettingsAdmin(): User
+{
     $admin = User::factory()->create();
     $admin->assignRole('admin');
+
+    return $admin;
+}
+
+test('an admin can view the LoA signer settings page', function () {
+    $admin = makeLoaSettingsAdmin();
 
     $response = $this->actingAs($admin)->get('/admin/loa-settings');
 
@@ -34,34 +41,69 @@ test('an admin can view the LoA signature page', function () {
     );
 });
 
-test('an admin can upload a LoA signature', function () {
+test('an admin can save the LoA signer name, title and signature together', function () {
     Storage::fake('public');
-
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
+    $admin = makeLoaSettingsAdmin();
 
     $response = $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Prof. Dr. Pimpinan Uji, M.T.',
+        'signer_title' => 'Ketua Panitia SNOS 2026',
         'signature' => UploadedFile::fake()->image('signature.png', 400, 150),
     ]);
 
     $response->assertRedirect();
     $setting = LoaSetting::current();
+    expect($setting->signer_name)->toBe('Prof. Dr. Pimpinan Uji, M.T.');
+    expect($setting->signer_title)->toBe('Ketua Panitia SNOS 2026');
     expect($setting->signature_path)->not->toBeNull();
     Storage::disk('public')->assertExists($setting->signature_path);
 });
 
-test('re-uploading a LoA signature replaces the old file', function () {
+test('the signer name is required', function () {
     Storage::fake('public');
+    $admin = makeLoaSettingsAdmin();
 
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
+    $response = $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => '',
+    ]);
+
+    $response->assertSessionHasErrors('signer_name');
+    expect(LoaSetting::current()->signer_name)->toBeNull();
+});
+
+test('updating the name without a new file keeps the existing signature', function () {
+    Storage::fake('public');
+    $admin = makeLoaSettingsAdmin();
 
     $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Nama Lama',
+        'signature' => UploadedFile::fake()->image('signature.png', 400, 150),
+    ]);
+    $signaturePath = LoaSetting::current()->signature_path;
+
+    $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Nama Baru',
+        'signature' => null,
+    ]);
+
+    $setting = LoaSetting::current();
+    expect($setting->signer_name)->toBe('Nama Baru');
+    expect($setting->signature_path)->toBe($signaturePath);
+    Storage::disk('public')->assertExists($signaturePath);
+});
+
+test('re-uploading a LoA signature replaces the old file', function () {
+    Storage::fake('public');
+    $admin = makeLoaSettingsAdmin();
+
+    $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Uji',
         'signature' => UploadedFile::fake()->image('first.png', 400, 150),
     ]);
     $firstPath = LoaSetting::current()->signature_path;
 
     $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Uji',
         'signature' => UploadedFile::fake()->image('second.png', 400, 150),
     ]);
     $secondPath = LoaSetting::current()->signature_path;
@@ -73,11 +115,10 @@ test('re-uploading a LoA signature replaces the old file', function () {
 
 test('uploading a non-image signature file is rejected', function () {
     Storage::fake('public');
-
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
+    $admin = makeLoaSettingsAdmin();
 
     $response = $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Uji',
         'signature' => UploadedFile::fake()->create('signature.pdf', 100, 'application/pdf'),
     ]);
 
@@ -87,10 +128,9 @@ test('uploading a non-image signature file is rejected', function () {
 
 test('an admin can remove the LoA signature', function () {
     Storage::fake('public');
-
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
+    $admin = makeLoaSettingsAdmin();
     $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Uji',
         'signature' => UploadedFile::fake()->image('signature.png', 400, 150),
     ]);
     $path = LoaSetting::current()->signature_path;
@@ -102,12 +142,13 @@ test('an admin can remove the LoA signature', function () {
     Storage::disk('public')->assertMissing($path);
 });
 
-test('a non-admin cannot manage the LoA signature', function () {
+test('a non-admin cannot manage the LoA signer settings', function () {
     $participant = User::factory()->create();
     $participant->assignRole('peserta');
 
     $this->actingAs($participant)->get('/admin/loa-settings')->assertForbidden();
     $this->actingAs($participant)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Uji',
         'signature' => UploadedFile::fake()->image('signature.png', 400, 150),
     ])->assertForbidden();
     $this->actingAs($participant)->delete('/admin/loa-settings')->assertForbidden();
@@ -147,12 +188,29 @@ test('the LoA PDF blade view renders the uploaded signature image only, with no 
     expect($withoutSignature)->not->toContain('class="signature-mark"');
 });
 
+test('the LoA PDF blade view prints the saved signer name and title under the signature', function () {
+    $html = view('loa.pdf', [
+        'loa' => new LetterOfAcceptance(['loa_number' => 'LOA-TEST-3', 'issued_at' => now()]),
+        'article' => Article::factory()->make(['title' => 'Judul Uji', 'article_number' => 'ART-TEST-3']),
+        'seminarName' => 'SNOS 2026',
+        'participantName' => 'Nama Uji',
+        'journalName' => null,
+        'signerName' => 'Prof. Dr. Pimpinan Tersimpan',
+        'signerTitle' => 'Ketua Panitia Tersimpan',
+        'signatureBase64' => null,
+        'signatureMime' => null,
+        'letterheadBase64' => base64_encode('fake-letterhead-bytes'),
+    ])->render();
+
+    expect($html)->toContain('Prof. Dr. Pimpinan Tersimpan');
+    expect($html)->toContain('Ketua Panitia Tersimpan');
+});
+
 test('issuing a LoA after uploading a signature still produces a valid stored PDF', function () {
     Storage::fake('public');
-
-    $admin = User::factory()->create();
-    $admin->assignRole('admin');
+    $admin = makeLoaSettingsAdmin();
     $this->actingAs($admin)->post('/admin/loa-settings', [
+        'signer_name' => 'Pimpinan Uji',
         'signature' => UploadedFile::fake()->image('signature.png', 400, 150),
     ]);
 

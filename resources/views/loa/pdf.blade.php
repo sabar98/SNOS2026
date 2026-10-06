@@ -4,20 +4,29 @@
     <meta charset="utf-8">
     <title>Letter of Acceptance {{ $loa->loa_number }}</title>
     <style>
+        /* Top and sides are zero so the kop spans the full A4 width like the paper's own letterhead. */
+        @page {
+            margin: 0 0 20mm 0;
+        }
         body {
             margin: 0;
-            padding: 50px 60px;
             font-family: 'DejaVu Sans', sans-serif;
             color: #1b1b18;
             font-size: 13px;
             line-height: 1.6;
         }
+        /* 894x191 source image: 210mm wide => 44.9mm tall, so it is never stretched. */
         .letterhead {
-            margin-bottom: 20px;
+            width: 210mm;
+            height: 45mm;
         }
         .letterhead img {
-            width: 100%;
+            width: 210mm;
+            height: 45mm;
             display: block;
+        }
+        .content {
+            padding: 0 25mm;
         }
         .title {
             text-align: center;
@@ -82,6 +91,7 @@
         <img src="data:image/png;base64,{{ $letterheadBase64 }}" alt="Kop Surat {{ $seminarName }}">
     </div>
 
+    <div class="content">
     <div class="title">Surat Penerimaan Artikel</div>
     <div class="loa-number">Nomor: {{ $loa->loa_number }}</div>
 
@@ -133,6 +143,7 @@
         <div class="signature-line"></div>
         <div class="signature-name">{{ $signerName }}</div>
         <div class="signature-title">{{ $signerTitle }}</div>
+    </div>
     </div>
 </body>
 </html>
