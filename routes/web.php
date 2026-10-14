@@ -97,6 +97,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('participant-accounts/{participantAccount}', [ParticipantAccountController::class, 'destroy'])->name('participant-accounts.destroy');
 
         Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+        Route::get('payments/export', [AdminPaymentController::class, 'exportExcel'])->name('payments.export');
+        Route::get('payments/export-pdf', [AdminPaymentController::class, 'exportPdf'])->name('payments.export-pdf');
         Route::put('payments/{payment}', [AdminPaymentController::class, 'update'])->name('payments.update');
 
         Route::get('journals', [AdminJournalController::class, 'index'])->name('journals.index');

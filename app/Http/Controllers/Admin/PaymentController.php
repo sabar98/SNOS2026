@@ -6,11 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\EventRegistration;
 use App\Models\Payment;
+use App\Services\PaymentExporter;
+use App\Services\PaymentPdfExporter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentController extends Controller
 {
@@ -18,7 +23,57 @@ class PaymentController extends Controller
     {
         $search = trim((string) $request->string('search'));
 
-        $payments = Payment::with(['payable' => function ($morphTo) {
+        $payments = $this->searchablePayments($search)
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return Inertia::render('Admin/Payments', [
+            'payments' => $payments,
+            'search' => $search,
+            'paymentsByStatus' => Payment::query()
+                ->selectRaw('status, count(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status'),
+            'paymentsByType' => Payment::query()
+                ->selectRaw('type, count(*) as total')
+                ->groupBy('type')
+                ->pluck('total', 'type'),
+        ]);
+    }
+
+    public function exportExcel(Request $request, PaymentExporter $exporter): StreamedResponse
+    {
+        $search = trim((string) $request->string('search'));
+        $payments = $this->searchablePayments($search)->latest()->get();
+        $filename = 'daftar-pembayaran-'.now()->format('Y-m-d').'.xlsx';
+
+        return response()->streamDownload(function () use ($exporter, $payments) {
+            $exporter->writeTo($payments)->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportPdf(Request $request, PaymentPdfExporter $exporter): HttpResponse
+    {
+        $search = trim((string) $request->string('search'));
+        $payments = $this->searchablePayments($search)->latest()->get();
+        $filename = 'daftar-pembayaran-'.now()->format('Y-m-d').'.pdf';
+
+        // Streamed inline (not a forced download) so it opens in the browser's own PDF
+        // viewer, where the admin can print it straight away.
+        return $exporter->generate($payments, $search !== '' ? $search : null)->stream($filename);
+    }
+
+    /**
+     * The same payable-eager-load + search filter used by the on-screen list, the
+     * Excel export and the PDF export, so "what you searched for" is always "what
+     * you get" regardless of which of the three you use.
+     */
+    private function searchablePayments(string $search): Builder
+    {
+        return Payment::with(['payable' => function ($morphTo) {
             $morphTo->morphWith([
                 EventRegistration::class => ['user'],
                 Article::class => ['eventRegistration.user'],
@@ -43,23 +98,7 @@ class PaymentController extends Controller
                                 });
                         });
                 });
-            })
-            ->latest()
-            ->paginate(20)
-            ->withQueryString();
-
-        return Inertia::render('Admin/Payments', [
-            'payments' => $payments,
-            'search' => $search,
-            'paymentsByStatus' => Payment::query()
-                ->selectRaw('status, count(*) as total')
-                ->groupBy('status')
-                ->pluck('total', 'status'),
-            'paymentsByType' => Payment::query()
-                ->selectRaw('type, count(*) as total')
-                ->groupBy('type')
-                ->pluck('total', 'type'),
-        ]);
+            });
     }
 
     public function update(Request $request, Payment $payment): RedirectResponse

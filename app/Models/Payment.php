@@ -15,11 +15,36 @@ class Payment extends Model
     use HasFactory;
 
     /**
-     * participant_name is computed (not a column) — appended so it's always
-     * included wherever a Payment is serialized (admin payment lists, etc.)
-     * without every caller having to remember to eager-load and derive it.
+     * All computed (not columns) — appended so they're always included wherever
+     * a Payment is serialized (admin payment lists, exports, etc.) without every
+     * caller having to remember to eager-load and derive them.
      */
-    protected $appends = ['participant_name', 'participant_email'];
+    protected $appends = ['participant_name', 'participant_email', 'participant_category', 'reference'];
+
+    /**
+     * Keep in sync with resources/js/lib/labels.ts' paymentTypeLabels /
+     * paymentStatusLabels — this is the PHP-side copy for exports (Excel/PDF),
+     * which can't reach the frontend's TypeScript labels.
+     */
+    public const TYPE_LABELS = [
+        'registrasi' => 'Registrasi',
+        'publikasi' => 'Publikasi',
+    ];
+
+    public const STATUS_LABELS = [
+        'belum_bayar' => 'Belum Bayar',
+        'menunggu_verifikasi' => 'Menunggu Verifikasi',
+        'terverifikasi' => 'Terverifikasi',
+        'perlu_perbaikan' => 'Perlu Perbaikan',
+        'ditolak' => 'Ditolak',
+        'dibatalkan' => 'Dibatalkan',
+    ];
+
+    /**
+     * Cached per-request so listing many payments only loads the category
+     * key->label map once instead of once per row.
+     */
+    protected static ?array $participantCategoryLabels = null;
 
     protected $fillable = [
         'payable_type',
@@ -80,6 +105,46 @@ class Payment extends Model
     protected function participantEmail(): Attribute
     {
         return Attribute::get(fn () => $this->participant()?->email);
+    }
+
+    /**
+     * The "Kategori" (e.g. Presenter Luring, Peserta Umum) the participant registered
+     * under, resolved to its current admin-editable label — falls back to the raw key
+     * if the category has since been renamed or removed from Admin > Kategori Peserta.
+     */
+    protected function participantCategory(): Attribute
+    {
+        return Attribute::get(function () {
+            $type = $this->participantType();
+
+            if ($type === null) {
+                return null;
+            }
+
+            static::$participantCategoryLabels ??= ParticipantCategory::pluck('label', 'key')->all();
+
+            return static::$participantCategoryLabels[$type] ?? $type;
+        });
+    }
+
+    /**
+     * What identifies this payment to an admin at a glance: the registration number
+     * for a registration fee, or the article title for a publication fee.
+     */
+    protected function reference(): Attribute
+    {
+        return Attribute::get(fn () => $this->payable?->registration_number ?? $this->payable?->title);
+    }
+
+    private function participantType(): ?string
+    {
+        $payable = $this->payable;
+
+        return match (true) {
+            $payable instanceof EventRegistration => $payable->participant_type,
+            $payable instanceof Article => $payable->eventRegistration?->participant_type,
+            default => null,
+        };
     }
 
     public function bankAccount(): BelongsTo

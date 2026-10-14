@@ -5,6 +5,7 @@ use App\Models\EventRegistration;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 function makeAdmin(): User
 {
@@ -387,4 +388,116 @@ test('the payment list is paginated at 20 per page and a search term carries ove
         ->where('payments.total', 25)
         ->has('payments.data', 5)
     );
+});
+
+test('an admin can export the payment list to an Excel file with the expected columns', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create(['name' => 'Peserta Ekspor Bayar', 'email' => 'ekspor.bayar@snos.test']);
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create([
+        'participant_type' => 'peserta_mahasiswa',
+        'registration_number' => 'SNOS2026-EKSPOR1',
+    ]);
+    $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 100000,
+        'payment_code' => 'PAY-EKSPOR1',
+        'status' => 'terverifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->get('/admin/payments/export');
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx');
+    file_put_contents($tmpFile, $response->streamedContent());
+    $sheet = IOFactory::load($tmpFile)->getActiveSheet();
+    unlink($tmpFile);
+
+    expect($sheet->getCell('B1')->getValue())->toBe('Referensi');
+    expect($sheet->getCell('C1')->getValue())->toBe('Nama');
+    expect($sheet->getCell('D1')->getValue())->toBe('Email');
+    expect($sheet->getCell('E1')->getValue())->toBe('Tipe');
+    expect($sheet->getCell('F1')->getValue())->toBe('Kategori');
+    expect($sheet->getCell('G1')->getValue())->toBe('Nominal');
+    expect($sheet->getCell('H1')->getValue())->toBe('Status Pembayaran');
+
+    $row = $sheet->rangeToArray('A2:H2', null, true, false)[0];
+    expect($row)->toBe([
+        1,
+        'SNOS2026-EKSPOR1',
+        'Peserta Ekspor Bayar',
+        'ekspor.bayar@snos.test',
+        'Registrasi',
+        'Peserta Mahasiswa',
+        100000.0,
+        'Terverifikasi',
+    ]);
+});
+
+test('exporting the payment list to Excel honours the current search', function () {
+    $admin = makeAdmin();
+    $match = User::factory()->create(['name' => 'Dicari Namanya']);
+    $match->assignRole('peserta');
+    EventRegistration::factory()->for($match, 'user')->create()->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 100000,
+        'payment_code' => 'PAY-MATCHXLSX',
+        'status' => 'belum_bayar',
+    ]);
+
+    $other = User::factory()->create(['name' => 'Orang Lain']);
+    $other->assignRole('peserta');
+    EventRegistration::factory()->for($other, 'user')->create()->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 100000,
+        'payment_code' => 'PAY-OTHERXLSX',
+        'status' => 'belum_bayar',
+    ]);
+
+    $response = $this->actingAs($admin)->get('/admin/payments/export?search=Dicari Namanya');
+
+    $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx');
+    file_put_contents($tmpFile, $response->streamedContent());
+    $rows = IOFactory::load($tmpFile)->getActiveSheet()->toArray();
+    unlink($tmpFile);
+
+    $names = array_slice(array_column($rows, 2), 1);
+    expect($names)->toBe(['Dicari Namanya']);
+});
+
+test('a non-admin cannot export the payment list to Excel', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->get('/admin/payments/export')->assertForbidden();
+});
+
+test('an admin can print the payment list as a PDF with the expected columns', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create(['name' => 'Peserta Cetak PDF', 'email' => 'cetak.pdf@snos.test']);
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create([
+        'participant_type' => 'presenter_luring',
+    ]);
+    $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 750000,
+        'payment_code' => 'PAY-CETAKPDF',
+        'status' => 'menunggu_verifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->get('/admin/payments/export-pdf');
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('application/pdf');
+    expect($response->getContent())->toContain('%PDF-');
+});
+
+test('a non-admin cannot print the payment list as a PDF', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->get('/admin/payments/export-pdf')->assertForbidden();
 });

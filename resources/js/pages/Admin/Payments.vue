@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { paymentStatusLabels, paymentStatusVariants, paymentTypeLabels, toChartData } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ListChecks, Search, Wallet } from 'lucide-vue-next';
+import { FileSpreadsheet, ListChecks, Printer, Search, Wallet } from 'lucide-vue-next';
 import { computed, reactive, ref, watch } from 'vue';
 
 interface Payment {
@@ -60,6 +60,10 @@ watch(search, (value) => {
         );
     }, 400);
 });
+
+// Export/print always reflect whatever is currently searched.
+const exportExcelUrl = computed(() => route('admin.payments.export', search.value ? { search: search.value } : {}));
+const exportPdfUrl = computed(() => route('admin.payments.export-pdf', search.value ? { search: search.value } : {}));
 
 // Can still be acted on: not yet decided, or decided but reversible (terverifikasi).
 // ditolak and dibatalkan are left as final — nothing to undo them back to.
@@ -138,9 +142,17 @@ function resetToUnpaid(paymentId: number) {
                         <CardTitle class="flex items-center gap-2"><ListChecks class="size-4 text-muted-foreground" /> Daftar Pembayaran</CardTitle>
                         <Badge variant="secondary">{{ payments.total }} transaksi</Badge>
                     </div>
-                    <div class="relative w-full max-w-xs">
-                        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input v-model="search" placeholder="Cari referensi, nama, atau email..." class="pl-9" />
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative w-full max-w-xs">
+                            <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input v-model="search" placeholder="Cari referensi, nama, atau email..." class="pl-9" />
+                        </div>
+                        <a :href="exportExcelUrl">
+                            <Button variant="outline" size="sm" class="gap-2"><FileSpreadsheet class="size-4" /> Export Excel</Button>
+                        </a>
+                        <a :href="exportPdfUrl" target="_blank">
+                            <Button variant="outline" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
+                        </a>
                     </div>
                 </CardHeader>
                 <CardContent>
