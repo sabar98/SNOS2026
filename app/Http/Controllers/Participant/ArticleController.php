@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Participant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Participant\StoreArticleRequest;
 use App\Models\Article;
+use App\Models\ArticleDeadlineSetting;
 use App\Models\EventRegistration;
 use App\Models\Journal;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,18 +19,20 @@ class ArticleController extends Controller
     {
         $this->authorize('update', $registration);
 
+        $deadline = ArticleDeadlineSetting::current()->article_submission_deadline;
+
         return Inertia::render('Participant/ArticleCreate', [
             'registration' => $registration,
             'journals' => Journal::query()->where('is_active', true)->orderBy('name')->get(),
-            'submissionDeadline' => config('seminar.article_submission_deadline'),
-            'deadlinePassed' => now()->greaterThan(Carbon::parse(config('seminar.article_submission_deadline'))),
+            'submissionDeadline' => $deadline,
+            'deadlinePassed' => now()->greaterThan($deadline),
         ]);
     }
 
     public function store(StoreArticleRequest $request, EventRegistration $registration): RedirectResponse
     {
         abort_if(
-            now()->greaterThan(Carbon::parse(config('seminar.article_submission_deadline'))),
+            now()->greaterThan(ArticleDeadlineSetting::current()->article_submission_deadline),
             422,
             'Batas waktu pengumpulan artikel telah berakhir.',
         );
@@ -72,10 +74,12 @@ class ArticleController extends Controller
 
         $article->load(['eventRegistration', 'journal', 'authors', 'reviews', 'revisions', 'letterOfAcceptance', 'presentationMaterial', 'publication.journal', 'payments']);
 
+        $presentationDeadline = ArticleDeadlineSetting::current()->presentation_material_deadline;
+
         return Inertia::render('Participant/ArticleShow', [
             'article' => $article,
-            'presentationMaterialDeadline' => config('seminar.presentation_material_deadline'),
-            'presentationMaterialDeadlinePassed' => now()->greaterThan(Carbon::parse(config('seminar.presentation_material_deadline'))),
+            'presentationMaterialDeadline' => $presentationDeadline,
+            'presentationMaterialDeadlinePassed' => now()->greaterThan($presentationDeadline),
         ]);
     }
 }

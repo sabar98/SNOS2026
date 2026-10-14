@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\ArticleDeadlineSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class PresentationMaterialController extends Controller
@@ -22,7 +22,7 @@ class PresentationMaterialController extends Controller
         $this->authorize('update', $article);
 
         abort_if(
-            now()->greaterThan(Carbon::parse(config('seminar.presentation_material_deadline'))),
+            now()->greaterThan(ArticleDeadlineSetting::current()->presentation_material_deadline),
             422,
             'Batas waktu unggah materi presentasi telah berakhir.',
         );

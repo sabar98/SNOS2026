@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\Admin\ArticleDeadlineSettingController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CertificateTemplateController;
@@ -184,6 +185,9 @@ Route::middleware('auth')->group(function () {
         Route::post('loa-settings', [LoaSettingController::class, 'update'])->name('loa-settings.update');
         Route::delete('loa-settings', [LoaSettingController::class, 'destroy'])->name('loa-settings.destroy');
         Route::post('loa-settings/regenerate', [LoaSettingController::class, 'regenerate'])->name('loa-settings.regenerate');
+
+        Route::get('deadline-settings', [ArticleDeadlineSettingController::class, 'edit'])->name('deadline-settings.edit');
+        Route::put('deadline-settings', [ArticleDeadlineSettingController::class, 'update'])->name('deadline-settings.update');
 
         Route::get('announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
         Route::post('announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
