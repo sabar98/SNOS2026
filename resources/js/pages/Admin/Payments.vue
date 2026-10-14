@@ -4,12 +4,13 @@ import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { paymentStatusLabels, paymentStatusVariants, paymentTypeLabels, toChartData } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
-import { ListChecks, Wallet } from 'lucide-vue-next';
-import { computed, reactive } from 'vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { ListChecks, Search, Wallet } from 'lucide-vue-next';
+import { computed, reactive, ref, watch } from 'vue';
 
 interface Payment {
     id: number;
@@ -23,10 +24,17 @@ interface Payment {
     payable: { registration_number?: string; title?: string } | null;
 }
 
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 const props = defineProps<{
-    payments: { data: Payment[] };
+    payments: { data: Payment[]; links: PaginationLink[]; total: number };
     paymentsByStatus: Record<string, number>;
     paymentsByType: Record<string, number>;
+    search: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Verifikasi Pembayaran', href: '/admin/payments' }];
@@ -36,6 +44,22 @@ const typeChartData = computed(() => toChartData(props.paymentsByType, paymentTy
 
 // Draft notes the admin is typing per payment row, kept until a decision is submitted.
 const notesDraft = reactive<Record<number, string>>({});
+
+// Server-side search (the list is paginated, so filtering only the current page would hide
+// matches on other pages) — debounced so it doesn't fire a request on every keystroke.
+const search = ref(props.search);
+let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+
+watch(search, (value) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        router.get(
+            route('admin.payments.index'),
+            { search: value || undefined },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    }, 400);
+});
 
 // Can still be acted on: not yet decided, or decided but reversible (terverifikasi).
 // ditolak and dibatalkan are left as final — nothing to undo them back to.
@@ -109,9 +133,15 @@ function resetToUnpaid(paymentId: number) {
             </div>
 
             <Card class="border-amber-100 bg-amber-50 dark:border-border dark:bg-amber-950/40">
-                <CardHeader class="flex flex-row items-center justify-between space-y-0">
-                    <CardTitle class="flex items-center gap-2"><ListChecks class="size-4 text-muted-foreground" /> Daftar Pembayaran</CardTitle>
-                    <Badge variant="secondary">{{ payments.data.length }} transaksi</Badge>
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                    <div class="flex items-center gap-2">
+                        <CardTitle class="flex items-center gap-2"><ListChecks class="size-4 text-muted-foreground" /> Daftar Pembayaran</CardTitle>
+                        <Badge variant="secondary">{{ payments.total }} transaksi</Badge>
+                    </div>
+                    <div class="relative w-full max-w-xs">
+                        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input v-model="search" placeholder="Cari referensi, nama, atau email..." class="pl-9" />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div class="overflow-x-auto">
@@ -128,6 +158,11 @@ function resetToUnpaid(paymentId: number) {
                                 </tr>
                             </thead>
                             <tbody>
+                                <tr v-if="payments.data.length === 0">
+                                    <td colspan="7" class="py-6 text-center text-muted-foreground">
+                                        Tidak ada pembayaran yang cocok dengan pencarian.
+                                    </td>
+                                </tr>
                                 <tr
                                     v-for="payment in payments.data"
                                     :key="payment.id"
@@ -204,6 +239,21 @@ function resetToUnpaid(paymentId: number) {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <Link
+                            v-for="link in payments.links"
+                            :key="link.label"
+                            :href="link.url ?? '#'"
+                            :class="[
+                                'rounded px-3 py-1 text-sm',
+                                link.active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                                !link.url && 'pointer-events-none opacity-50',
+                            ]"
+                        >
+                            <span v-html="link.label" />
+                        </Link>
                     </div>
                 </CardContent>
             </Card>

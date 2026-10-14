@@ -14,20 +14,43 @@ use Inertia\Response;
 
 class PaymentController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = trim((string) $request->string('search'));
+
         $payments = Payment::with(['payable' => function ($morphTo) {
             $morphTo->morphWith([
                 EventRegistration::class => ['user'],
                 Article::class => ['eventRegistration.user'],
             ]);
         }])
+            ->when($search !== '', function ($query) use ($search) {
+                // Referensi can be a registration number or an article title, and the
+                // participant can be found via either payable type — registrasi payments
+                // reach the user directly, publikasi payments one hop further via the article.
+                $query->where(function ($query) use ($search) {
+                    $query->where('payment_code', 'like', "%{$search}%")
+                        ->orWhereHasMorph('payable', [EventRegistration::class], function ($query) use ($search) {
+                            $query->where('registration_number', 'like', "%{$search}%")
+                                ->orWhereHas('user', function ($query) use ($search) {
+                                    $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
+                                });
+                        })
+                        ->orWhereHasMorph('payable', [Article::class], function ($query) use ($search) {
+                            $query->where('title', 'like', "%{$search}%")
+                                ->orWhereHas('eventRegistration.user', function ($query) use ($search) {
+                                    $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
+                                });
+                        });
+                });
+            })
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('Admin/Payments', [
             'payments' => $payments,
+            'search' => $search,
             'paymentsByStatus' => Payment::query()
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')

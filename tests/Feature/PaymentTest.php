@@ -288,3 +288,103 @@ test('the admin payment list shows the participant name and email for both regis
     expect($publicationPayment->fresh()->participant_name)->toBe('Peserta Pembayaran Uji');
     expect($publicationPayment->fresh()->participant_email)->toBe('pembayaran.uji@snos.test');
 });
+
+test('an admin can search the payment list by participant name, email, or reference', function () {
+    $admin = makeAdmin();
+
+    $ahmad = User::factory()->create(['name' => 'Ahmad Baswara', 'email' => 'ahmad.baswara@snos.test']);
+    $ahmad->assignRole('peserta');
+    $ahmadRegistration = EventRegistration::factory()->for($ahmad, 'user')->create(['registration_number' => 'SNOS2026-AHMAD1']);
+    $ahmadPayment = $ahmadRegistration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-AHMADCODE',
+        'status' => 'belum_bayar',
+    ]);
+
+    $siti = User::factory()->create(['name' => 'Siti Marlina', 'email' => 'siti.marlina@snos.test']);
+    $siti->assignRole('peserta');
+    $sitiRegistration = EventRegistration::factory()->for($siti, 'user')->create(['registration_number' => 'SNOS2026-SITI1']);
+    $sitiPayment = $sitiRegistration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-SITICODE',
+        'status' => 'belum_bayar',
+    ]);
+
+    // By participant name
+    $this->actingAs($admin)->get('/admin/payments?search=Ahmad Baswara')->assertInertia(fn ($page) => $page
+        ->where('payments.total', 1)
+        ->where('payments.data.0.id', $ahmadPayment->id)
+    );
+
+    // By email
+    $this->actingAs($admin)->get('/admin/payments?search=siti.marlina@snos.test')->assertInertia(fn ($page) => $page
+        ->where('payments.total', 1)
+        ->where('payments.data.0.id', $sitiPayment->id)
+    );
+
+    // By reference (registration number)
+    $this->actingAs($admin)->get('/admin/payments?search=SNOS2026-AHMAD1')->assertInertia(fn ($page) => $page
+        ->where('payments.total', 1)
+        ->where('payments.data.0.id', $ahmadPayment->id)
+    );
+
+    // By reference (payment code)
+    $this->actingAs($admin)->get('/admin/payments?search=PAY-SITICODE')->assertInertia(fn ($page) => $page
+        ->where('payments.total', 1)
+        ->where('payments.data.0.id', $sitiPayment->id)
+    );
+
+    // No match
+    $this->actingAs($admin)->get('/admin/payments?search=TidakAdaYangCocok')->assertInertia(fn ($page) => $page
+        ->where('payments.total', 0)
+    );
+});
+
+test('an admin can search the payment list by the article title of a publication payment', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create();
+    $article = Article::factory()->for($registration, 'eventRegistration')->create(['title' => 'Judul Artikel Sangat Unik Untuk Uji Pencarian']);
+    $payment = $article->payments()->create([
+        'type' => 'publikasi',
+        'amount' => 300000,
+        'payment_code' => 'PAY-ARTSEARCH',
+        'status' => 'belum_bayar',
+    ]);
+
+    $this->actingAs($admin)->get('/admin/payments?search=Sangat Unik Untuk Uji')->assertInertia(fn ($page) => $page
+        ->where('payments.total', 1)
+        ->where('payments.data.0.id', $payment->id)
+    );
+});
+
+test('the payment list is paginated at 20 per page and a search term carries over to the next page link', function () {
+    $admin = makeAdmin();
+
+    EventRegistration::factory()
+        ->count(25)
+        ->create()
+        ->each(function (EventRegistration $registration, int $index) {
+            $registration->payments()->create([
+                'type' => 'registrasi',
+                'amount' => 150000,
+                'payment_code' => "PAY-PAGETEST{$index}",
+                'status' => 'belum_bayar',
+            ]);
+        });
+
+    $firstPage = $this->actingAs($admin)->get('/admin/payments');
+    $firstPage->assertInertia(fn ($page) => $page
+        ->where('payments.total', 25)
+        ->has('payments.data', 20)
+    );
+
+    $secondPage = $this->actingAs($admin)->get('/admin/payments?page=2');
+    $secondPage->assertInertia(fn ($page) => $page
+        ->where('payments.total', 25)
+        ->has('payments.data', 5)
+    );
+});
