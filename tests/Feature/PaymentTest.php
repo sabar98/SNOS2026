@@ -108,6 +108,61 @@ test('an admin rejecting a payment requires notes and does not advance the regis
     expect($registration->status)->toBe('menunggu_verifikasi');
 });
 
+test('an admin can reject a payment outright, requiring notes and not advancing the registration', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create(['status' => 'menunggu_verifikasi']);
+    $payment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-TESTREJ',
+        'status' => 'menunggu_verifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'ditolak',
+        'notes' => 'Bukti pembayaran milik orang lain.',
+    ]);
+
+    $response->assertRedirect();
+    $payment->refresh();
+    $registration->refresh();
+    expect($payment->status)->toBe('ditolak');
+    expect($payment->notes)->toBe('Bukti pembayaran milik orang lain.');
+    expect($payment->verified_by)->toBe($admin->id);
+    expect($registration->status)->toBe('menunggu_verifikasi');
+});
+
+test('an admin can cancel a payment, requiring notes', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create(['status' => 'menunggu_pembayaran']);
+    $payment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-TESTCANCEL',
+        'status' => 'belum_bayar',
+    ]);
+
+    $noNotesResponse = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'dibatalkan',
+    ]);
+    $noNotesResponse->assertSessionHasErrors('notes');
+
+    $response = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'dibatalkan',
+        'notes' => 'Duplikat transaksi.',
+    ]);
+
+    $response->assertRedirect();
+    $payment->refresh();
+    expect($payment->status)->toBe('dibatalkan');
+    expect($payment->notes)->toBe('Duplikat transaksi.');
+    expect($payment->verified_by)->toBe($admin->id);
+});
+
 test('the admin payment list shows the participant name and email for both registration and publication fees', function () {
     $admin = makeAdmin();
     $participant = User::factory()->create(['name' => 'Peserta Pembayaran Uji', 'email' => 'pembayaran.uji@snos.test']);

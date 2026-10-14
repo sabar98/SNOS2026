@@ -42,8 +42,8 @@ class PaymentController extends Controller
     public function update(Request $request, Payment $payment): RedirectResponse
     {
         $validated = $request->validate([
-            'decision' => ['required', 'in:terverifikasi,perlu_perbaikan'],
-            'notes' => ['nullable', 'string', 'required_if:decision,perlu_perbaikan'],
+            'decision' => ['required', 'in:terverifikasi,perlu_perbaikan,ditolak,dibatalkan'],
+            'notes' => ['nullable', 'string', 'required_if:decision,perlu_perbaikan,ditolak,dibatalkan'],
         ]);
 
         $payment->update([
@@ -53,6 +53,9 @@ class PaymentController extends Controller
             'verified_at' => now(),
         ]);
 
+        // Only acceptance advances the registration/article. perlu_perbaikan, ditolak and
+        // dibatalkan all just record the decision on the payment itself — the participant
+        // sees the status and notes, and (for perlu_perbaikan) can upload a new proof.
         if ($validated['decision'] === 'terverifikasi' && $payment->type === 'registrasi') {
             $payment->payable->update(['status' => 'pembayaran_terverifikasi']);
             $payment->payable->markCompletedIfEligible();

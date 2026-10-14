@@ -34,6 +34,8 @@ export const paymentStatusLabels: Record<string, string> = {
     menunggu_verifikasi: 'Menunggu Verifikasi',
     terverifikasi: 'Terverifikasi',
     perlu_perbaikan: 'Perlu Perbaikan',
+    ditolak: 'Ditolak',
+    dibatalkan: 'Dibatalkan',
 };
 
 export const registrationStatusLabels: Record<string, string> = {
@@ -91,6 +93,8 @@ export const paymentStatusVariants: Record<string, StatusBadgeVariant> = {
     menunggu_verifikasi: 'warning',
     terverifikasi: 'success',
     perlu_perbaikan: 'destructive',
+    ditolak: 'destructive',
+    dibatalkan: 'outline',
 };
 
 export const attendanceStatusLabels: Record<string, string> = {

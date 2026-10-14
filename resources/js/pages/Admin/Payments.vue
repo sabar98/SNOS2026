@@ -9,13 +9,14 @@ import { paymentStatusLabels, paymentStatusVariants, paymentTypeLabels, toChartD
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ListChecks, Wallet } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 
 interface Payment {
     id: number;
     type: string;
     amount: string;
     status: string;
+    notes: string | null;
     proof_file_path: string | null;
     participant_name: string | null;
     participant_email: string | null;
@@ -33,17 +34,45 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Verifikasi Pembayaran', href: '
 const statusChartData = computed(() => toChartData(props.paymentsByStatus, paymentStatusLabels));
 const typeChartData = computed(() => toChartData(props.paymentsByType, paymentTypeLabels));
 
-const notesDraft: Record<number, string> = {};
+// Draft notes the admin is typing per payment row, kept until a decision is submitted.
+const notesDraft = reactive<Record<number, string>>({});
+
+// Can still be acted on: not yet accepted, rejected, or cancelled.
+function isActionable(status: string) {
+    return status === 'belum_bayar' || status === 'menunggu_verifikasi' || status === 'perlu_perbaikan';
+}
+
+function submitDecision(paymentId: number, decision: string, fallbackNotes: string) {
+    const notes = notesDraft[paymentId]?.trim() || fallbackNotes;
+
+    useForm({ decision, notes }).put(route('admin.payments.update', paymentId), {
+        preserveScroll: true,
+        onSuccess: () => {
+            delete notesDraft[paymentId];
+        },
+    });
+}
 
 function verify(paymentId: number) {
-    useForm({ decision: 'terverifikasi', notes: '' }).put(route('admin.payments.update', paymentId), { preserveScroll: true });
+    submitDecision(paymentId, 'terverifikasi', '');
+}
+
+function requestFix(paymentId: number) {
+    submitDecision(paymentId, 'perlu_perbaikan', 'Bukti pembayaran tidak sesuai, mohon unggah ulang.');
 }
 
 function reject(paymentId: number) {
-    useForm({ decision: 'perlu_perbaikan', notes: notesDraft[paymentId] ?? 'Bukti pembayaran tidak sesuai.' }).put(
-        route('admin.payments.update', paymentId),
-        { preserveScroll: true },
-    );
+    if (!confirm('Tolak pembayaran ini? Peserta tidak bisa mengunggah ulang bukti untuk pembayaran ini.')) {
+        return;
+    }
+    submitDecision(paymentId, 'ditolak', 'Bukti pembayaran tidak valid.');
+}
+
+function cancel(paymentId: number) {
+    if (!confirm('Batalkan pembayaran ini? Peserta tidak bisa mengunggah ulang bukti untuk pembayaran ini.')) {
+        return;
+    }
+    submitDecision(paymentId, 'dibatalkan', 'Pembayaran dibatalkan oleh panitia.');
 }
 </script>
 
@@ -115,10 +144,43 @@ function reject(paymentId: number) {
                                         <Badge :variant="paymentStatusVariants[payment.status] ?? 'secondary'">
                                             {{ paymentStatusLabels[payment.status] ?? payment.status }}
                                         </Badge>
+                                        <p v-if="payment.notes" class="mt-1 max-w-[220px] text-xs text-muted-foreground">{{ payment.notes }}</p>
                                     </td>
-                                    <td v-if="payment.status === 'menunggu_verifikasi'" class="flex gap-2 py-2">
-                                        <Button size="sm" @click="verify(payment.id)">Verifikasi</Button>
-                                        <Button size="sm" variant="destructive" @click="reject(payment.id)">Tolak</Button>
+                                    <td class="py-2">
+                                        <div v-if="isActionable(payment.status)" class="flex flex-col gap-2">
+                                            <textarea
+                                                v-model="notesDraft[payment.id]"
+                                                rows="1"
+                                                placeholder="Catatan (wajib untuk Perlu Perbaikan/Tolak/Batalkan)"
+                                                class="w-48 resize-y rounded-md border border-input bg-background px-2 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            ></textarea>
+                                            <div class="flex flex-wrap gap-2">
+                                                <Button
+                                                    v-if="payment.status === 'menunggu_verifikasi'"
+                                                    size="sm"
+                                                    @click="verify(payment.id)"
+                                                    >Verifikasi</Button
+                                                >
+                                                <Button
+                                                    v-if="payment.status === 'menunggu_verifikasi'"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    @click="requestFix(payment.id)"
+                                                    >Perlu Perbaikan</Button
+                                                >
+                                                <Button
+                                                    v-if="payment.status === 'menunggu_verifikasi'"
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    @click="reject(payment.id)"
+                                                    >Tolak</Button
+                                                >
+                                                <Button size="sm" variant="ghost" class="text-destructive" @click="cancel(payment.id)"
+                                                    >Batalkan</Button
+                                                >
+                                            </div>
+                                        </div>
+                                        <span v-else class="text-xs text-muted-foreground">-</span>
                                     </td>
                                 </tr>
                             </tbody>
