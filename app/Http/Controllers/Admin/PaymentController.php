@@ -42,9 +42,18 @@ class PaymentController extends Controller
     public function update(Request $request, Payment $payment): RedirectResponse
     {
         $validated = $request->validate([
-            'decision' => ['required', 'in:terverifikasi,perlu_perbaikan,ditolak,dibatalkan'],
-            'notes' => ['nullable', 'string', 'required_if:decision,perlu_perbaikan,ditolak,dibatalkan'],
+            'decision' => ['required', 'in:terverifikasi,perlu_perbaikan,ditolak,dibatalkan,belum_bayar'],
+            'notes' => ['nullable', 'string', 'required_unless:decision,terverifikasi'],
         ]);
+
+        // Captured before the update: whether this payment is the reason the registration
+        // is currently marked paid, so an undo (ditolak/dibatalkan/belum_bayar on a payment
+        // that was terverifikasi) can safely step the registration back — but only while it
+        // hasn't progressed any further (e.g. an article was already submitted), so this
+        // never clobbers state that depends on something other than this one payment.
+        $canUndoRegistrationPayment = $payment->type === 'registrasi'
+            && $payment->status === 'terverifikasi'
+            && $payment->payable->status === 'pembayaran_terverifikasi';
 
         $payment->update([
             'status' => $validated['decision'],
@@ -53,12 +62,11 @@ class PaymentController extends Controller
             'verified_at' => now(),
         ]);
 
-        // Only acceptance advances the registration/article. perlu_perbaikan, ditolak and
-        // dibatalkan all just record the decision on the payment itself — the participant
-        // sees the status and notes, and (for perlu_perbaikan) can upload a new proof.
         if ($validated['decision'] === 'terverifikasi' && $payment->type === 'registrasi') {
             $payment->payable->update(['status' => 'pembayaran_terverifikasi']);
             $payment->payable->markCompletedIfEligible();
+        } elseif ($canUndoRegistrationPayment && in_array($validated['decision'], ['ditolak', 'dibatalkan', 'belum_bayar'], true)) {
+            $payment->payable->update(['status' => 'menunggu_pembayaran']);
         }
 
         return back()->with('status', 'payment-updated');

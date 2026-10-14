@@ -37,9 +37,10 @@ const typeChartData = computed(() => toChartData(props.paymentsByType, paymentTy
 // Draft notes the admin is typing per payment row, kept until a decision is submitted.
 const notesDraft = reactive<Record<number, string>>({});
 
-// Can still be acted on: not yet accepted, rejected, or cancelled.
+// Can still be acted on: not yet decided, or decided but reversible (terverifikasi).
+// ditolak and dibatalkan are left as final — nothing to undo them back to.
 function isActionable(status: string) {
-    return status === 'belum_bayar' || status === 'menunggu_verifikasi' || status === 'perlu_perbaikan';
+    return status === 'belum_bayar' || status === 'menunggu_verifikasi' || status === 'perlu_perbaikan' || status === 'terverifikasi';
 }
 
 function submitDecision(paymentId: number, decision: string, fallbackNotes: string) {
@@ -69,10 +70,21 @@ function reject(paymentId: number) {
 }
 
 function cancel(paymentId: number) {
-    if (!confirm('Batalkan pembayaran ini? Peserta tidak bisa mengunggah ulang bukti untuk pembayaran ini.')) {
+    if (
+        !confirm(
+            'Batalkan pembayaran ini? Peserta tidak bisa mengunggah ulang bukti untuk pembayaran ini. Jika pembayaran ini sebelumnya sudah terverifikasi, status pendaftaran akan dikembalikan ke "Menunggu Pembayaran".',
+        )
+    ) {
         return;
     }
     submitDecision(paymentId, 'dibatalkan', 'Pembayaran dibatalkan oleh panitia.');
+}
+
+function resetToUnpaid(paymentId: number) {
+    if (!confirm('Ubah pembayaran ini kembali menjadi Belum Bayar? Peserta akan diminta mengunggah ulang bukti pembayaran.')) {
+        return;
+    }
+    submitDecision(paymentId, 'belum_bayar', 'Verifikasi dibatalkan oleh panitia, mohon unggah ulang bukti pembayaran.');
 }
 </script>
 
@@ -151,7 +163,7 @@ function cancel(paymentId: number) {
                                             <textarea
                                                 v-model="notesDraft[payment.id]"
                                                 rows="1"
-                                                placeholder="Catatan (wajib untuk Perlu Perbaikan/Tolak/Batalkan)"
+                                                placeholder="Catatan (wajib kecuali Verifikasi)"
                                                 class="w-48 resize-y rounded-md border border-input bg-background px-2 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                             ></textarea>
                                             <div class="flex flex-wrap gap-2">
@@ -174,6 +186,13 @@ function cancel(paymentId: number) {
                                                     variant="destructive"
                                                     @click="reject(payment.id)"
                                                     >Tolak</Button
+                                                >
+                                                <Button
+                                                    v-if="payment.status === 'terverifikasi'"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    @click="resetToUnpaid(payment.id)"
+                                                    >Ubah ke Belum Bayar</Button
                                                 >
                                                 <Button size="sm" variant="ghost" class="text-destructive" @click="cancel(payment.id)"
                                                     >Batalkan</Button

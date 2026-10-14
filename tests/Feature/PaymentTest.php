@@ -163,6 +163,100 @@ test('an admin can cancel a payment, requiring notes', function () {
     expect($payment->verified_by)->toBe($admin->id);
 });
 
+test('an admin can reset a verified payment back to belum_bayar, which also reopens the registration for payment', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create(['status' => 'pembayaran_terverifikasi']);
+    $payment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-TESTUNDO1',
+        'status' => 'terverifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'belum_bayar',
+        'notes' => 'Bukti ternyata tidak valid, diminta mengunggah ulang.',
+    ]);
+
+    $response->assertRedirect();
+    $payment->refresh();
+    $registration->refresh();
+    expect($payment->status)->toBe('belum_bayar');
+    expect($registration->status)->toBe('menunggu_pembayaran');
+});
+
+test('an admin cancelling a previously verified payment also reopens the registration for payment', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create(['status' => 'pembayaran_terverifikasi']);
+    $payment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-TESTUNDO2',
+        'status' => 'terverifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'dibatalkan',
+        'notes' => 'Pembayaran ternyata keliru, dibatalkan.',
+    ]);
+
+    $response->assertRedirect();
+    $payment->refresh();
+    $registration->refresh();
+    expect($payment->status)->toBe('dibatalkan');
+    expect($registration->status)->toBe('menunggu_pembayaran');
+});
+
+test('undoing a verified payment does not touch a registration that has already moved past it', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    // The registration progressed (e.g. the article was already submitted) since this
+    // payment was verified, so reverting the payment must not silently rewind it.
+    $registration = EventRegistration::factory()->for($participant, 'user')->create(['status' => 'artikel_diajukan']);
+    $payment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-TESTUNDO3',
+        'status' => 'terverifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'dibatalkan',
+        'notes' => 'Dibatalkan untuk pengujian.',
+    ]);
+
+    $response->assertRedirect();
+    $payment->refresh();
+    $registration->refresh();
+    expect($payment->status)->toBe('dibatalkan');
+    expect($registration->status)->toBe('artikel_diajukan');
+});
+
+test('resetting a payment decision still requires notes', function () {
+    $admin = makeAdmin();
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = EventRegistration::factory()->for($participant, 'user')->create(['status' => 'pembayaran_terverifikasi']);
+    $payment = $registration->payments()->create([
+        'type' => 'registrasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-TESTUNDO4',
+        'status' => 'terverifikasi',
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/payments/{$payment->id}", [
+        'decision' => 'belum_bayar',
+    ]);
+
+    $response->assertSessionHasErrors('notes');
+    expect($payment->fresh()->status)->toBe('terverifikasi');
+});
+
 test('the admin payment list shows the participant name and email for both registration and publication fees', function () {
     $admin = makeAdmin();
     $participant = User::factory()->create(['name' => 'Peserta Pembayaran Uji', 'email' => 'pembayaran.uji@snos.test']);
