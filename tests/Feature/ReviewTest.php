@@ -131,6 +131,8 @@ test('a reviewer requesting minor revision routes the article back to the partic
     expect($article->status)->toBe('revisi_minor');
     expect($registration->status)->toBe('perlu_revisi');
 
+    $originalFilePath = $article->file_path;
+
     Storage::fake('public');
     $response = $this->actingAs($registration->user)->post("/participant/articles/{$article->id}/revisions", [
         'file' => UploadedFile::fake()->create('revisi.pdf', 100, 'application/pdf'),
@@ -139,9 +141,30 @@ test('a reviewer requesting minor revision routes the article back to the partic
 
     $response->assertRedirect();
     $article->refresh();
+    $assignment->refresh();
     expect($article->status)->toBe('sedang_direview');
     expect($article->revisions)->toHaveCount(1);
     expect($article->revisions->first()->version_number)->toBe(1);
+    // The file reviewers and admins actually see must become the revised one — otherwise
+    // the revision is saved but never surfaces anywhere.
+    expect($article->file_path)->toBe($article->revisions->first()->file_path);
+    expect($article->file_path)->not->toBe($originalFilePath);
+    // The reviewer's "selesai" assignment goes back to pending so the revision gets reviewed.
+    expect($assignment->status)->toBe('ditugaskan');
+});
+
+test('a participant cannot submit a revision when the article is not awaiting one', function () {
+    $article = makeReviewableArticle();
+    $registration = $article->eventRegistration;
+
+    Storage::fake('public');
+    $response = $this->actingAs($registration->user)->post("/participant/articles/{$article->id}/revisions", [
+        'file' => UploadedFile::fake()->create('revisi.pdf', 100, 'application/pdf'),
+        'response_to_reviewer' => 'Revisi awal.',
+    ]);
+
+    $response->assertStatus(422);
+    expect($article->revisions()->count())->toBe(0);
 });
 
 test('a reviewer cannot review an article assigned to someone else', function () {
