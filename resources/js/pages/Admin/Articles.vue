@@ -150,12 +150,14 @@ function destroy(article: Article) {
                         <Input v-model="dateFrom" type="date" class="w-auto" aria-label="Dari tanggal" />
                         <span class="text-sm text-muted-foreground">s.d.</span>
                         <Input v-model="dateTo" type="date" class="w-auto" aria-label="Sampai tanggal" />
-                        <a :href="exportExcelUrl">
-                            <Button variant="outline" size="sm" class="gap-2"><FileSpreadsheet class="size-4" /> Export Excel</Button>
-                        </a>
-                        <a :href="exportPdfUrl" target="_blank">
-                            <Button variant="outline" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
-                        </a>
+                        <div class="flex items-center gap-2">
+                            <a :href="exportExcelUrl">
+                                <Button variant="outline" size="sm" class="gap-2"><FileSpreadsheet class="size-4" /> Export Excel</Button>
+                            </a>
+                            <a :href="exportPdfUrl" target="_blank">
+                                <Button variant="outline" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
+                            </a>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
