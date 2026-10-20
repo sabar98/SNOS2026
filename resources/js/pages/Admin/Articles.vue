@@ -152,10 +152,12 @@ function destroy(article: Article) {
                         <Input v-model="dateTo" type="date" class="w-auto" aria-label="Sampai tanggal" />
                         <div class="flex items-center gap-2">
                             <a :href="exportExcelUrl">
-                                <Button variant="outline" size="sm" class="gap-2"><FileSpreadsheet class="size-4" /> Export Excel</Button>
+                                <Button size="sm" class="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                                    <FileSpreadsheet class="size-4" /> Export Excel
+                                </Button>
                             </a>
                             <a :href="exportPdfUrl" target="_blank">
-                                <Button variant="outline" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
+                                <Button variant="destructive" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
                             </a>
                         </div>
                     </div>
