@@ -158,3 +158,69 @@ test('an admin can reject an article at the administration stage', function () {
     expect($article->status)->toBe('ditolak_administrasi');
     expect($article->admin_notes)->toBe('Tidak sesuai template.');
 });
+
+test('an admin can search the article list by title or author name', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $author = User::factory()->create(['name' => 'Siti Marlina']);
+    $registration = makePresenterRegistration($author);
+    Article::factory()->for($registration, 'eventRegistration')->create(['title' => 'Optimasi Sistem Antrian']);
+
+    $other = makePresenterRegistration();
+    Article::factory()->for($other, 'eventRegistration')->create(['title' => 'Analisis Data Lainnya']);
+
+    $this->actingAs($admin)->get('/admin/articles?search=Siti Marlina')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('articles.total', 1)
+            ->where('articles.data.0.title', 'Optimasi Sistem Antrian')
+        );
+
+    $this->actingAs($admin)->get('/admin/articles?search=Optimasi')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('articles.total', 1));
+});
+
+test('an admin can filter the article list by submission date range', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $inRange = makePresenterRegistration();
+    $article1 = Article::factory()->for($inRange, 'eventRegistration')->create();
+    $article1->forceFill(['created_at' => '2026-10-10 10:00:00'])->save();
+
+    $outOfRange = makePresenterRegistration();
+    $article2 = Article::factory()->for($outOfRange, 'eventRegistration')->create();
+    $article2->forceFill(['created_at' => '2026-09-01 10:00:00'])->save();
+
+    $this->actingAs($admin)->get('/admin/articles?date_from=2026-10-01&date_to=2026-10-31')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('articles.total', 1)
+            ->where('articles.data.0.id', $article1->id)
+        );
+});
+
+test('the admin article list is paginated at 20 per page', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    Article::factory()->count(25)->state(function () {
+        return ['event_registration_id' => makePresenterRegistration()->id];
+    })->create();
+
+    $this->actingAs($admin)->get('/admin/articles')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('articles.total', 25)
+            ->has('articles.data', 20)
+        );
+});
+
+test('a non-admin cannot view the article list', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->get('/admin/articles')->assertForbidden();
+});

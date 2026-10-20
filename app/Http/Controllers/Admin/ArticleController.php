@@ -14,15 +14,30 @@ use Inertia\Response;
 
 class ArticleController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = trim((string) $request->string('search'));
+        $dateFrom = $request->string('date_from')->toString() ?: null;
+        $dateTo = $request->string('date_to')->toString() ?: null;
+
         $articles = Article::with(['eventRegistration.user', 'journal'])
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhereHas('eventRegistration.user', function ($query) use ($search) {
+                            $query->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when($dateFrom, fn ($query) => $query->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($query) => $query->whereDate('created_at', '<=', $dateTo))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('Admin/Articles', [
             'articles' => $articles,
+            'filters' => ['search' => $search, 'date_from' => $dateFrom, 'date_to' => $dateTo],
             'articlesByStatus' => Article::query()
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
