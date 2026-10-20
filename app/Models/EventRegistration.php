@@ -15,6 +15,38 @@ class EventRegistration extends Model
     /** @use HasFactory<EventRegistrationFactory> */
     use HasFactory;
 
+    // Keep in sync with resources/js/lib/labels.ts (participantTypeLabels).
+    public const PARTICIPANT_TYPE_LABELS = [
+        'presenter_luring' => 'Presenter Luring',
+        'presenter_daring' => 'Presenter Daring',
+        'peserta_umum' => 'Peserta Umum',
+        'peserta_mahasiswa' => 'Peserta Mahasiswa',
+    ];
+
+    // Keep in sync with resources/js/lib/labels.ts (attendanceMethodLabels).
+    public const ATTENDANCE_METHOD_LABELS = [
+        'luring' => 'Luring',
+        'daring' => 'Daring',
+    ];
+
+    // Keep in sync with resources/js/lib/labels.ts (registrationStatusLabels).
+    public const STATUS_LABELS = [
+        'draft' => 'Draft',
+        'menunggu_pembayaran' => 'Menunggu Pembayaran',
+        'menunggu_verifikasi' => 'Menunggu Verifikasi',
+        'pembayaran_terverifikasi' => 'Pembayaran Terverifikasi',
+        'artikel_diajukan' => 'Artikel Diajukan',
+        'sedang_direview' => 'Sedang Direview',
+        'perlu_revisi' => 'Perlu Revisi',
+        'artikel_diterima' => 'Artikel Diterima',
+        'jadwal_ditetapkan' => 'Jadwal Ditetapkan',
+        'siap_mengikuti_seminar' => 'Siap Mengikuti Seminar',
+        'hadir' => 'Hadir',
+        'selesai' => 'Selesai',
+        'sertifikat_terbit' => 'Sertifikat Terbit',
+        'ditolak' => 'Ditolak',
+    ];
+
     protected $fillable = [
         'registration_number',
         'user_id',

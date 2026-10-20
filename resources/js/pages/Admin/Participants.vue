@@ -4,12 +4,13 @@ import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { participantTypeLabels, registrationStatusLabels, registrationStatusVariants, toChartData } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
-import { ListChecks, Users } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { FileSpreadsheet, ListChecks, Printer, Search, Users } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 interface Registration {
     id: number;
@@ -19,16 +20,44 @@ interface Registration {
     user: { name: string; email: string };
 }
 
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 const props = defineProps<{
-    registrations: { data: Registration[]; links: { url: string | null; label: string; active: boolean }[] };
+    registrations: { data: Registration[]; links: PaginationLink[]; total: number };
     participantsByType: Record<string, number>;
     participantsByStatus: Record<string, number>;
+    filters: { search: string };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Peserta', href: '/admin/participants' }];
 
 const typeChartData = computed(() => toChartData(props.participantsByType, participantTypeLabels));
 const statusChartData = computed(() => toChartData(props.participantsByStatus, registrationStatusLabels));
+
+// Server-side search (the list is paginated, so filtering only the current page
+// would hide matches on other pages) — debounced so it doesn't fire on every keystroke.
+const search = ref(props.filters.search);
+let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+
+watch(search, (value) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        router.get(
+            route('admin.participants.index'),
+            { search: value || undefined },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    }, 400);
+});
+
+// Export/print always reflect whatever is currently searched.
+const exportParams = computed(() => ({ search: search.value || undefined }));
+const exportExcelUrl = computed(() => route('admin.participants.export', exportParams.value));
+const exportPdfUrl = computed(() => route('admin.participants.export-pdf', exportParams.value));
 </script>
 
 <template>
@@ -52,9 +81,27 @@ const statusChartData = computed(() => toChartData(props.participantsByStatus, r
             </div>
 
             <Card class="border-emerald-100 bg-emerald-50 dark:border-border dark:bg-emerald-950/40">
-                <CardHeader class="flex flex-row items-center justify-between space-y-0">
-                    <CardTitle class="flex items-center gap-2"><ListChecks class="size-4 text-muted-foreground" /> Daftar Peserta</CardTitle>
-                    <Badge variant="secondary">{{ registrations.data.length }} pendaftaran</Badge>
+                <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                    <div class="flex items-center gap-2">
+                        <CardTitle class="flex items-center gap-2"><ListChecks class="size-4 text-muted-foreground" /> Daftar Peserta</CardTitle>
+                        <Badge variant="secondary">{{ registrations.total }} pendaftaran</Badge>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative w-full max-w-xs">
+                            <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input v-model="search" placeholder="Cari nama, email, atau nomor HP..." class="pl-9" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a :href="exportExcelUrl">
+                                <Button size="sm" class="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                                    <FileSpreadsheet class="size-4" /> Export Excel
+                                </Button>
+                            </a>
+                            <a :href="exportPdfUrl" target="_blank">
+                                <Button variant="destructive" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
+                            </a>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div class="overflow-x-auto">
@@ -69,6 +116,11 @@ const statusChartData = computed(() => toChartData(props.participantsByStatus, r
                                 </tr>
                             </thead>
                             <tbody>
+                                <tr v-if="registrations.data.length === 0">
+                                    <td colspan="5" class="py-6 text-center text-muted-foreground">
+                                        Tidak ada peserta yang cocok dengan pencarian.
+                                    </td>
+                                </tr>
                                 <tr
                                     v-for="registration in registrations.data"
                                     :key="registration.id"

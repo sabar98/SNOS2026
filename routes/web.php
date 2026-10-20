@@ -86,6 +86,8 @@ Route::middleware('auth')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('participants', [AdminParticipantController::class, 'index'])->name('participants.index');
+        Route::get('participants/export', [AdminParticipantController::class, 'exportExcel'])->name('participants.export');
+        Route::get('participants/export-pdf', [AdminParticipantController::class, 'exportPdf'])->name('participants.export-pdf');
         Route::get('participants/{registration}', [AdminParticipantController::class, 'show'])->name('participants.show');
 
         Route::get('participant-accounts', [ParticipantAccountController::class, 'index'])->name('participant-accounts.index');
