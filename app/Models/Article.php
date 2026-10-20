@@ -16,6 +16,21 @@ class Article extends Model
     /** @use HasFactory<ArticleFactory> */
     use HasFactory;
 
+    // Keep in sync with resources/js/lib/labels.ts (articleStatusLabels).
+    public const STATUS_LABELS = [
+        'draft' => 'Draft',
+        'diajukan' => 'Diajukan',
+        'pemeriksaan_administrasi' => 'Pemeriksaan Administrasi',
+        'perlu_perbaikan_administrasi' => 'Perlu Perbaikan Administrasi',
+        'ditolak_administrasi' => 'Ditolak Administrasi',
+        'proses_review' => 'Proses Review',
+        'sedang_direview' => 'Sedang Direview',
+        'revisi_minor' => 'Revisi Minor',
+        'revisi_mayor' => 'Revisi Mayor',
+        'diterima' => 'Diterima',
+        'ditolak' => 'Ditolak',
+    ];
+
     protected $fillable = [
         'event_registration_id',
         'journal_id',

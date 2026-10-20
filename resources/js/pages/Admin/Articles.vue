@@ -11,7 +11,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { articleStatusLabels, articleStatusVariants, toChartData } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { FileText, ListChecks, Pencil, Search, Trash2 } from 'lucide-vue-next';
+import { FileSpreadsheet, FileText, ListChecks, Pencil, Printer, Search, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 interface Article {
@@ -73,6 +73,15 @@ watch([search, dateFrom, dateTo], ([searchValue, dateFromValue, dateToValue]) =>
 function formatDate(value: string): string {
     return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+// Export/print always reflect whatever is currently searched and filtered.
+const exportParams = computed(() => ({
+    search: search.value || undefined,
+    date_from: dateFrom.value || undefined,
+    date_to: dateTo.value || undefined,
+}));
+const exportExcelUrl = computed(() => route('admin.articles.export', exportParams.value));
+const exportPdfUrl = computed(() => route('admin.articles.export-pdf', exportParams.value));
 
 const editDialogOpen = ref(false);
 const activeArticle = ref<Article | null>(null);
@@ -141,6 +150,12 @@ function destroy(article: Article) {
                         <Input v-model="dateFrom" type="date" class="w-auto" aria-label="Dari tanggal" />
                         <span class="text-sm text-muted-foreground">s.d.</span>
                         <Input v-model="dateTo" type="date" class="w-auto" aria-label="Sampai tanggal" />
+                        <a :href="exportExcelUrl">
+                            <Button variant="outline" size="sm" class="gap-2"><FileSpreadsheet class="size-4" /> Export Excel</Button>
+                        </a>
+                        <a :href="exportPdfUrl" target="_blank">
+                            <Button variant="outline" size="sm" class="gap-2"><Printer class="size-4" /> Cetak PDF</Button>
+                        </a>
                     </div>
                 </CardHeader>
                 <CardContent>

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 function makePresenterRegistration(?User $user = null, bool $paymentVerified = true): EventRegistration
 {
@@ -297,4 +298,94 @@ test('a non-admin cannot delete an article', function () {
 
     $response->assertForbidden();
     expect(Article::find($article->id))->not->toBeNull();
+});
+
+test('an admin can export the article list to an Excel file with the expected columns', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $author = User::factory()->create([
+        'name' => 'Peserta Ekspor Artikel',
+        'institution' => 'Universitas Serambi Mekkah',
+        'whatsapp_number' => '081234567890',
+    ]);
+    $registration = makePresenterRegistration($author);
+    Article::factory()->for($registration, 'eventRegistration')->create([
+        'title' => 'Judul Artikel untuk Ekspor',
+        'status' => 'diterima',
+    ]);
+
+    $response = $this->actingAs($admin)->get('/admin/articles/export');
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx');
+    file_put_contents($tmpFile, $response->streamedContent());
+    $sheet = IOFactory::load($tmpFile)->getActiveSheet();
+    unlink($tmpFile);
+
+    expect($sheet->getCell('B1')->getValue())->toBe('Nama Penulis');
+    expect($sheet->getCell('C1')->getValue())->toBe('Instansi');
+    expect($sheet->getCell('D1')->getValue())->toBe('Nomor HP/WhatsApp');
+    expect($sheet->getCell('E1')->getValue())->toBe('Judul Artikel');
+    expect($sheet->getCell('F1')->getValue())->toBe('Status');
+
+    $row = $sheet->rangeToArray('A2:F2', null, true, false)[0];
+    expect($row)->toBe([
+        1,
+        'Peserta Ekspor Artikel',
+        'Universitas Serambi Mekkah',
+        '081234567890',
+        'Judul Artikel untuk Ekspor',
+        'Diterima',
+    ]);
+});
+
+test('exporting the article list to Excel honours the current search', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $match = User::factory()->create(['name' => 'Dicari Namanya Artikel']);
+    Article::factory()->for(makePresenterRegistration($match), 'eventRegistration')->create();
+
+    $other = User::factory()->create(['name' => 'Orang Lain Artikel']);
+    Article::factory()->for(makePresenterRegistration($other), 'eventRegistration')->create();
+
+    $response = $this->actingAs($admin)->get('/admin/articles/export?search=Dicari Namanya Artikel');
+
+    $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx');
+    file_put_contents($tmpFile, $response->streamedContent());
+    $rows = IOFactory::load($tmpFile)->getActiveSheet()->toArray();
+    unlink($tmpFile);
+
+    $names = array_slice(array_column($rows, 1), 1);
+    expect($names)->toBe(['Dicari Namanya Artikel']);
+});
+
+test('a non-admin cannot export the article list to Excel', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->get('/admin/articles/export')->assertForbidden();
+});
+
+test('an admin can print the article list as a PDF with the expected columns', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $author = User::factory()->create(['name' => 'Peserta Cetak PDF Artikel']);
+    $registration = makePresenterRegistration($author);
+    Article::factory()->for($registration, 'eventRegistration')->create(['title' => 'Judul Artikel Cetak PDF']);
+
+    $response = $this->actingAs($admin)->get('/admin/articles/export-pdf');
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('application/pdf');
+    expect($response->getContent())->toContain('%PDF-');
+});
+
+test('a non-admin cannot print the article list as a PDF', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+
+    $this->actingAs($participant)->get('/admin/articles/export-pdf')->assertForbidden();
 });

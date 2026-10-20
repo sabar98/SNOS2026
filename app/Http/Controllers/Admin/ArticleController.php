@@ -5,13 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\Journal;
+use App\Services\ArticleExporter;
+use App\Services\ArticlePdfExporter;
 use App\Services\LoaPdfGenerator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ArticleController extends Controller
 {
@@ -21,17 +26,7 @@ class ArticleController extends Controller
         $dateFrom = $request->string('date_from')->toString() ?: null;
         $dateTo = $request->string('date_to')->toString() ?: null;
 
-        $articles = Article::with(['eventRegistration.user', 'journal'])
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('title', 'like', "%{$search}%")
-                        ->orWhereHas('eventRegistration.user', function ($query) use ($search) {
-                            $query->where('name', 'like', "%{$search}%");
-                        });
-                });
-            })
-            ->when($dateFrom, fn ($query) => $query->whereDate('created_at', '>=', $dateFrom))
-            ->when($dateTo, fn ($query) => $query->whereDate('created_at', '<=', $dateTo))
+        $articles = $this->searchableArticles($search, $dateFrom, $dateTo)
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -45,6 +40,55 @@ class ArticleController extends Controller
                 ->groupBy('status')
                 ->pluck('total', 'status'),
         ]);
+    }
+
+    public function exportExcel(Request $request, ArticleExporter $exporter): StreamedResponse
+    {
+        $search = trim((string) $request->string('search'));
+        $articles = $this->filteredArticlesForExport($request, $search)->get();
+        $filename = 'daftar-artikel-'.now()->format('Y-m-d').'.xlsx';
+
+        return response()->streamDownload(function () use ($exporter, $articles) {
+            $exporter->writeTo($articles)->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportPdf(Request $request, ArticlePdfExporter $exporter): HttpResponse
+    {
+        $search = trim((string) $request->string('search'));
+        $articles = $this->filteredArticlesForExport($request, $search)->get();
+        $filename = 'daftar-artikel-'.now()->format('Y-m-d').'.pdf';
+
+        return $exporter->generate($articles, $search !== '' ? $search : null)->stream($filename);
+    }
+
+    private function filteredArticlesForExport(Request $request, string $search): Builder
+    {
+        $dateFrom = $request->string('date_from')->toString() ?: null;
+        $dateTo = $request->string('date_to')->toString() ?: null;
+
+        return $this->searchableArticles($search, $dateFrom, $dateTo)->latest();
+    }
+
+    /**
+     * The same filters used by the on-screen list, the Excel export and the PDF export,
+     * so "what you searched for" is always "what you get" regardless of which you use.
+     */
+    private function searchableArticles(string $search, ?string $dateFrom, ?string $dateTo): Builder
+    {
+        return Article::with(['eventRegistration.user', 'journal'])
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhereHas('eventRegistration.user', function ($query) use ($search) {
+                            $query->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when($dateFrom, fn ($query) => $query->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($query) => $query->whereDate('created_at', '<=', $dateTo));
     }
 
     public function show(Article $article): Response

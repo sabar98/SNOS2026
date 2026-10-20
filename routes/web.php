@@ -122,6 +122,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('registration-fees/{registrationFee}', [RegistrationFeeController::class, 'destroy'])->name('registration-fees.destroy');
 
         Route::get('articles', [AdminArticleController::class, 'index'])->name('articles.index');
+        Route::get('articles/export', [AdminArticleController::class, 'exportExcel'])->name('articles.export');
+        Route::get('articles/export-pdf', [AdminArticleController::class, 'exportPdf'])->name('articles.export-pdf');
         Route::get('articles/{article}', [AdminArticleController::class, 'show'])->name('articles.show');
         Route::put('articles/{article}', [AdminArticleController::class, 'update'])->name('articles.update');
         Route::put('articles/{article}/details', [AdminArticleController::class, 'updateDetails'])->name('articles.update-details');
