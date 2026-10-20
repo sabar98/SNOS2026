@@ -2,6 +2,8 @@
 
 use App\Models\Article;
 use App\Models\EventRegistration;
+use App\Models\Journal;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -223,4 +225,76 @@ test('a non-admin cannot view the article list', function () {
     $participant->assignRole('peserta');
 
     $this->actingAs($participant)->get('/admin/articles')->assertForbidden();
+});
+
+test('an admin can edit an article\'s details', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $journal = Journal::factory()->create(['is_active' => true]);
+    $registration = makePresenterRegistration();
+    $article = Article::factory()->for($registration, 'eventRegistration')->create([
+        'title' => 'Judul Lama',
+        'journal_id' => null,
+    ]);
+
+    $response = $this->actingAs($admin)->put("/admin/articles/{$article->id}/details", [
+        'journal_id' => $journal->id,
+        'title' => 'Judul Baru yang Diperbarui',
+        'abstract' => 'Abstrak yang sudah direvisi oleh panitia.',
+        'keywords' => 'revisi, admin, artikel',
+        'field' => 'Ilmu Komputer',
+    ]);
+
+    $response->assertRedirect();
+    $article->refresh();
+    expect($article->title)->toBe('Judul Baru yang Diperbarui');
+    expect($article->journal_id)->toBe($journal->id);
+    expect($article->field)->toBe('Ilmu Komputer');
+});
+
+test('a non-admin cannot edit an article\'s details', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = makePresenterRegistration();
+    $article = Article::factory()->for($registration, 'eventRegistration')->create();
+
+    $response = $this->actingAs($participant)->put("/admin/articles/{$article->id}/details", [
+        'title' => 'Mencoba mengubah',
+        'abstract' => 'abstrak',
+        'keywords' => 'kata kunci',
+        'field' => 'bidang',
+    ]);
+
+    $response->assertForbidden();
+});
+
+test('an admin can delete an article along with its payments', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $registration = makePresenterRegistration();
+    $article = Article::factory()->for($registration, 'eventRegistration')->create();
+    $article->payments()->create([
+        'type' => 'publikasi',
+        'amount' => 150000,
+        'payment_code' => 'PAY-DEL-TEST',
+        'status' => 'belum_bayar',
+    ]);
+
+    $response = $this->actingAs($admin)->delete("/admin/articles/{$article->id}");
+
+    $response->assertRedirect();
+    expect(Article::find($article->id))->toBeNull();
+    expect(Payment::where('payable_id', $article->id)->where('payable_type', Article::class)->count())->toBe(0);
+});
+
+test('a non-admin cannot delete an article', function () {
+    $participant = User::factory()->create();
+    $participant->assignRole('peserta');
+    $registration = makePresenterRegistration();
+    $article = Article::factory()->for($registration, 'eventRegistration')->create();
+
+    $response = $this->actingAs($participant)->delete("/admin/articles/{$article->id}");
+
+    $response->assertForbidden();
+    expect(Article::find($article->id))->not->toBeNull();
 });

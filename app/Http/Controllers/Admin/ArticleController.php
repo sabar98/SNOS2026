@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\Journal;
 use App\Services\LoaPdfGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,7 @@ class ArticleController extends Controller
         return Inertia::render('Admin/Articles', [
             'articles' => $articles,
             'filters' => ['search' => $search, 'date_from' => $dateFrom, 'date_to' => $dateTo],
+            'journals' => Journal::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'articlesByStatus' => Article::query()
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
@@ -73,6 +75,33 @@ class ArticleController extends Controller
         }
 
         return back()->with('status', 'article-updated');
+    }
+
+    public function updateDetails(Request $request, Article $article): RedirectResponse
+    {
+        $validated = $request->validate([
+            'journal_id' => ['nullable', 'exists:journals,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'abstract' => ['required', 'string'],
+            'keywords' => ['required', 'string', 'max:255'],
+            'field' => ['required', 'string', 'max:255'],
+        ]);
+
+        $article->update($validated);
+
+        return back()->with('status', 'article-details-updated');
+    }
+
+    public function destroy(Article $article): RedirectResponse
+    {
+        DB::transaction(function () use ($article) {
+            // Payments are polymorphic with no DB-level cascade, so they'd otherwise be
+            // left pointing at a deleted article.
+            $article->payments()->delete();
+            $article->delete();
+        });
+
+        return back()->with('status', 'article-deleted');
     }
 
     public function issueLoa(Article $article, LoaPdfGenerator $loaPdfGenerator): RedirectResponse

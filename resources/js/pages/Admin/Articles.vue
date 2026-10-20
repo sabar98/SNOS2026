@@ -4,20 +4,31 @@ import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { articleStatusLabels, articleStatusVariants, toChartData } from '@/lib/labels';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { FileText, ListChecks, Search } from 'lucide-vue-next';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { FileText, ListChecks, Pencil, Search, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 interface Article {
     id: number;
     title: string;
+    abstract: string;
+    keywords: string;
+    field: string;
+    journal_id: number | null;
     status: string;
     created_at: string;
     event_registration: { user: { name: string } };
+}
+
+interface Journal {
+    id: number;
+    name: string;
 }
 
 interface PaginationLink {
@@ -28,6 +39,7 @@ interface PaginationLink {
 
 const props = defineProps<{
     articles: { data: Article[]; links: PaginationLink[]; total: number };
+    journals: Journal[];
     articlesByStatus: Record<string, number>;
     filters: { search: string; date_from: string | null; date_to: string | null };
 }>();
@@ -60,6 +72,45 @@ watch([search, dateFrom, dateTo], ([searchValue, dateFromValue, dateToValue]) =>
 
 function formatDate(value: string): string {
     return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+const editDialogOpen = ref(false);
+const activeArticle = ref<Article | null>(null);
+
+const editForm = useForm({
+    journal_id: null as number | null,
+    title: '',
+    abstract: '',
+    keywords: '',
+    field: '',
+});
+
+function openEditDialog(article: Article) {
+    activeArticle.value = article;
+    editForm.clearErrors();
+    editForm.journal_id = article.journal_id;
+    editForm.title = article.title;
+    editForm.abstract = article.abstract;
+    editForm.keywords = article.keywords;
+    editForm.field = article.field;
+    editDialogOpen.value = true;
+}
+
+function submitEdit() {
+    if (!activeArticle.value) return;
+    editForm.put(route('admin.articles.update-details', activeArticle.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            editDialogOpen.value = false;
+        },
+    });
+}
+
+function destroy(article: Article) {
+    if (!confirm(`Hapus artikel "${article.title}"? Tindakan ini tidak bisa dibatalkan.`)) {
+        return;
+    }
+    router.delete(route('admin.articles.destroy', article.id), { preserveScroll: true });
 }
 </script>
 
@@ -94,14 +145,14 @@ function formatDate(value: string): string {
                 </CardHeader>
                 <CardContent>
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[640px] text-sm">
+                        <table class="w-full min-w-[760px] text-sm">
                             <thead>
                                 <tr class="border-b text-left text-muted-foreground">
                                     <th class="py-2">Judul</th>
                                     <th>Penulis</th>
                                     <th>Tanggal</th>
                                     <th>Status</th>
-                                    <th></th>
+                                    <th class="text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,10 +174,18 @@ function formatDate(value: string): string {
                                             {{ articleStatusLabels[article.status] ?? article.status }}
                                         </Badge>
                                     </td>
-                                    <td>
-                                        <Link :href="route('admin.articles.show', article.id)">
-                                            <Button variant="outline" size="sm">Detail</Button>
-                                        </Link>
+                                    <td class="py-2 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <Link :href="route('admin.articles.show', article.id)">
+                                                <Button variant="outline" size="sm">Detail</Button>
+                                            </Link>
+                                            <Button variant="outline" size="sm" class="gap-1.5" @click="openEditDialog(article)">
+                                                <Pencil class="size-3.5" /> Edit
+                                            </Button>
+                                            <Button variant="destructive" size="sm" class="gap-1.5" @click="destroy(article)">
+                                                <Trash2 class="size-3.5" /> Hapus
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -150,5 +209,63 @@ function formatDate(value: string): string {
                 </CardContent>
             </Card>
         </div>
+
+        <Dialog v-model:open="editDialogOpen">
+            <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Ubah Artikel</DialogTitle>
+                    <DialogDescription>{{ activeArticle?.title }}</DialogDescription>
+                </DialogHeader>
+
+                <form class="grid gap-4" @submit.prevent="submitEdit">
+                    <div class="grid gap-1.5">
+                        <Label for="article_title">Judul</Label>
+                        <Input id="article_title" v-model="editForm.title" required />
+                        <p v-if="editForm.errors.title" class="text-sm text-destructive">{{ editForm.errors.title }}</p>
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label for="article_abstract">Abstrak</Label>
+                        <textarea
+                            id="article_abstract"
+                            v-model="editForm.abstract"
+                            rows="4"
+                            class="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        ></textarea>
+                        <p v-if="editForm.errors.abstract" class="text-sm text-destructive">{{ editForm.errors.abstract }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="grid gap-1.5">
+                            <Label for="article_keywords">Kata Kunci</Label>
+                            <Input id="article_keywords" v-model="editForm.keywords" />
+                            <p v-if="editForm.errors.keywords" class="text-sm text-destructive">{{ editForm.errors.keywords }}</p>
+                        </div>
+                        <div class="grid gap-1.5">
+                            <Label for="article_field">Bidang</Label>
+                            <Input id="article_field" v-model="editForm.field" />
+                            <p v-if="editForm.errors.field" class="text-sm text-destructive">{{ editForm.errors.field }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-1.5">
+                        <Label for="article_journal">Jurnal / Prosiding Tujuan</Label>
+                        <select
+                            id="article_journal"
+                            v-model="editForm.journal_id"
+                            class="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                            <option :value="null">— Belum dipilih —</option>
+                            <option v-for="journal in journals" :key="journal.id" :value="journal.id">{{ journal.name }}</option>
+                        </select>
+                        <p v-if="editForm.errors.journal_id" class="text-sm text-destructive">{{ editForm.errors.journal_id }}</p>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="submit" :disabled="editForm.processing">Simpan Perubahan</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>
