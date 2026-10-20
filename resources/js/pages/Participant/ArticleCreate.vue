@@ -40,7 +40,7 @@ const formattedDeadline = new Date(props.submissionDeadline).toLocaleString('id-
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Unggah Artikel', href: '#' }];
 
-const templateUrl = encodeURI('/template/Template full paper SNOS 2026.pdf');
+const templateUrl = encodeURI('/template/Template full paper SNOS 2026.docx');
 
 const inputClass =
     'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
